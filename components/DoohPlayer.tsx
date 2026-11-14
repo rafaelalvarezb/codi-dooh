@@ -35,7 +35,10 @@ export function DoohPlayer({ useCaseId, dimmed = false }: DoohPlayerProps) {
   const campaign = campaigns[index] ?? campaigns[0];
 
   return (
-    <section className="relative h-full min-h-0 overflow-hidden bg-[#0B0F14]">
+    <section
+      className="dooh-player relative h-full min-h-0 overflow-hidden bg-[#0B0F14] text-white"
+      style={{ color: "#FFFFFF" }}
+    >
       <div
         className={[
           "absolute inset-0 transition-all duration-500 ease-out",

@@ -35,7 +35,10 @@ export function KioskShell() {
   const dimAds = profile.billingMode === "fixed" || sessionActive;
 
   return (
-    <div className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-[var(--cd-bg)] text-[var(--cd-text)]">
+    <div
+      className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-zinc-100"
+      style={{ colorScheme: "light" }}
+    >
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[7fr_3fr]">
         <DoohPlayer useCaseId={profile.useCaseId} dimmed={dimAds} />
         <CodiPanel

@@ -194,9 +194,11 @@ export function CodiPanel({
     : (qr?.numRef ?? "—");
 
   return (
-    <aside className="relative flex h-full min-h-0 flex-col bg-white">
-      {/* Trust header */}
-      <div className="flex items-center gap-3 border-b border-[var(--cd-border)] px-7 py-5">
+    <aside
+      className="codi-pay-panel relative flex h-full min-h-0 flex-col border-l border-zinc-200 bg-white"
+      style={{ color: "#0B0F14", backgroundColor: "#FFFFFF" }}
+    >
+      <div className="flex items-center gap-3 border-b border-zinc-200 px-7 py-5">
         <Image
           src="/brand/codi-logo.png"
           alt="CoDi"
@@ -206,10 +208,10 @@ export function CodiPanel({
           priority
         />
         <div className="min-w-0 flex-1">
-          <p className="text-[17px] font-semibold tracking-tight text-[var(--cd-text)]">
+          <p className="codi-pay-title text-[17px] font-semibold tracking-tight">
             Pago con CoDi
           </p>
-          <p className="text-[13px] text-[var(--cd-text-muted)]">
+          <p className="codi-pay-subtitle text-[13px]">
             Transferencia segura · Sin comisión
           </p>
         </div>
@@ -218,29 +220,29 @@ export function CodiPanel({
       <div className="flex min-h-0 flex-1 flex-col px-7 py-7">
         {state === "standby" ? (
           <div className="flex flex-1 flex-col">
-            <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-[var(--cd-text-muted)]">
+            <p className="codi-pay-muted text-[13px] font-medium uppercase tracking-[0.14em]">
               Disponible
             </p>
-            <h2 className="mt-2 text-[32px] font-semibold leading-[1.1] tracking-tight text-[var(--cd-text)]">
+            <h2 className="codi-pay-title mt-2 text-[32px] font-semibold leading-[1.1] tracking-tight">
               {profile.standbyTitle}
             </h2>
-            <p className="mt-4 text-[16px] leading-relaxed text-[var(--cd-text-secondary)]">
+            <p className="codi-pay-secondary mt-4 text-[16px] leading-relaxed">
               {profile.standbyBody}
             </p>
-            <div className="mt-auto rounded-3xl bg-[var(--cd-surface-muted)] px-5 py-5">
+            <div className="mt-auto rounded-3xl bg-zinc-100 px-5 py-5">
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-semibold text-[var(--cd-text)] shadow-sm">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-semibold text-zinc-950 shadow-sm">
                   1
                 </span>
-                <p className="text-[15px] leading-snug text-[var(--cd-text)]">
+                <p className="codi-pay-title text-[15px] leading-snug">
                   Confirma tu boleto o monto en la máquina
                 </p>
               </div>
               <div className="mt-4 flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-semibold text-[var(--cd-text)] shadow-sm">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-semibold text-zinc-950 shadow-sm">
                   2
                 </span>
-                <p className="text-[15px] leading-snug text-[var(--cd-text)]">
+                <p className="codi-pay-title text-[15px] leading-snug">
                   Escanea el QR CoDi® desde la app de tu banco
                 </p>
               </div>
@@ -253,18 +255,18 @@ export function CodiPanel({
           state === "awaiting" ||
           state === "error") && (
           <div className="flex min-h-0 flex-1 flex-col">
-            <p className="text-[13px] font-medium text-[var(--cd-text-muted)]">
+            <p className="codi-pay-muted text-[13px] font-medium">
               {profile.serviceTitle}
             </p>
-            <p className="mt-3 text-[48px] font-semibold leading-none tracking-tight text-[var(--cd-text)]">
+            <p className="codi-pay-amount mt-3 text-[48px] font-semibold leading-none tracking-tight">
               {amountLabel}
             </p>
 
             <div className="mt-8 flex min-h-0 flex-1 flex-col items-center justify-center">
               {state === "creating" ? (
                 <div className="flex flex-col items-center gap-4">
-                  <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-[var(--cd-border)] border-t-[var(--cd-accent)]" />
-                  <p className="text-[15px] text-[var(--cd-text-secondary)]">
+                  <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-zinc-200 border-t-zinc-950" />
+                  <p className="codi-pay-secondary text-[15px]">
                     Generando código CoDi…
                   </p>
                 </div>
@@ -272,7 +274,7 @@ export function CodiPanel({
 
               {state === "awaiting" && qr ? (
                 <div className="flex w-full flex-col items-center">
-                  <div className="rounded-[28px] border border-[var(--cd-border)] bg-white p-4 shadow-[0_12px_40px_rgba(11,15,20,0.08)]">
+                  <div className="rounded-[28px] border border-zinc-200 bg-white p-4 shadow-[0_12px_40px_rgba(11,15,20,0.08)]">
                     {qr.qrImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -284,17 +286,17 @@ export function CodiPanel({
                       <QrFallback payload={qr.qrString} />
                     )}
                   </div>
-                  <p className="mt-6 max-w-[22ch] text-center text-[17px] font-semibold leading-snug text-[var(--cd-text)]">
+                  <p className="codi-pay-title mt-6 max-w-[22ch] text-center text-[17px] font-semibold leading-snug">
                     Escanea el QR CoDi® desde la app de tu banco
                   </p>
-                  <p className="mt-2 animate-soft-pulse text-[14px] text-[var(--cd-text-muted)]">
+                  <p className="codi-pay-muted mt-2 animate-soft-pulse text-[14px]">
                     Esperando confirmación…
                   </p>
                 </div>
               ) : null}
 
               {state === "error" ? (
-                <div className="w-full rounded-3xl bg-[var(--cd-danger-soft)] px-5 py-4 text-[15px] text-[var(--cd-danger)]">
+                <div className="w-full rounded-3xl bg-red-50 px-5 py-4 text-[15px] text-red-700">
                   {errorMessage}
                   <button
                     type="button"
@@ -302,7 +304,7 @@ export function CodiPanel({
                       startedRef.current = false;
                       void createQr();
                     }}
-                    className="mt-4 w-full rounded-2xl bg-[var(--cd-accent)] px-4 py-3.5 text-[15px] font-semibold text-white"
+                    className="mt-4 w-full rounded-2xl bg-zinc-950 px-4 py-3.5 text-[15px] font-semibold text-white"
                   >
                     Reintentar
                   </button>
@@ -314,14 +316,10 @@ export function CodiPanel({
 
         {state === "success" ? (
           <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <div
-              className="animate-success-pop flex h-[88px] w-[88px] items-center justify-center rounded-full"
-              style={{ background: "var(--cd-success-soft)" }}
-            >
+            <div className="animate-success-pop flex h-[88px] w-[88px] items-center justify-center rounded-full bg-emerald-50">
               <svg
                 viewBox="0 0 24 24"
-                className="h-11 w-11"
-                style={{ color: "var(--cd-success)" }}
+                className="h-11 w-11 text-emerald-600"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.6"
@@ -332,14 +330,14 @@ export function CodiPanel({
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </div>
-            <p className="mt-6 text-[30px] font-semibold tracking-tight text-[var(--cd-text)]">
+            <p className="codi-pay-title mt-6 text-[30px] font-semibold tracking-tight">
               {profile.successMessage}
             </p>
-            <p className="mt-2 text-[15px] text-[var(--cd-text-secondary)]">
+            <p className="codi-pay-success mt-2 text-[15px] font-medium">
               Acceso liberado
             </p>
 
-            <div className="mt-8 w-full rounded-3xl bg-[var(--cd-surface-muted)] px-5 py-4 text-left text-[14px] text-[var(--cd-text-secondary)]">
+            <div className="mt-8 w-full rounded-3xl bg-zinc-100 px-5 py-4 text-left text-[14px]">
               <Row label="Folio" value={folio} mono />
               <Row label="Fecha" value={stamp?.fecha ?? "—"} />
               <Row label="Hora" value={stamp?.hora ?? "—"} />
@@ -362,10 +360,10 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1.5">
-      <span>{label}</span>
+      <span className="codi-pay-secondary">{label}</span>
       <span
         className={[
-          "font-medium text-[var(--cd-text)]",
+          "codi-pay-title font-medium",
           mono ? "font-mono tracking-wide" : "",
         ].join(" ")}
       >
@@ -395,7 +393,7 @@ function QrFallback({ payload }: { payload: string }) {
 
   if (!src) {
     return (
-      <div className="flex h-56 w-56 items-center justify-center rounded-2xl bg-[var(--cd-surface-muted)] text-sm text-[var(--cd-text-muted)]">
+      <div className="flex h-56 w-56 items-center justify-center rounded-2xl bg-zinc-100 text-sm text-zinc-500">
         Preparando QR…
       </div>
     );

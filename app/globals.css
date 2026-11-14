@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --cd-bg: #f7f8fa;
+  color-scheme: light;
+  --cd-bg: #f4f5f7;
   --cd-surface: #ffffff;
-  --cd-surface-muted: #f1f3f5;
-  --cd-border: #e5e7eb;
+  --cd-surface-muted: #f0f2f5;
+  --cd-border: #e2e5ea;
   --cd-text: #0b0f14;
-  --cd-text-secondary: #5b6570;
-  --cd-text-muted: #8b949e;
+  --cd-text-secondary: #4b5563;
+  --cd-text-muted: #6b7280;
   --cd-accent: #0b0f14;
-  --cd-success: #12b76a;
-  --cd-success-soft: rgba(18, 183, 106, 0.12);
+  --cd-success: #099250;
+  --cd-success-soft: #e8f8ef;
   --cd-danger: #d92d20;
-  --cd-danger-soft: rgba(217, 45, 32, 0.1);
-  --background: var(--cd-bg);
-  --foreground: var(--cd-text);
+  --cd-danger-soft: #fef3f2;
+  --background: #f4f5f7;
+  --foreground: #0b0f14;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: #f4f5f7;
+  --color-foreground: #0b0f14;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -32,11 +33,12 @@ html,
 body {
   height: 100%;
   overflow: hidden;
+  color-scheme: light;
 }
 
 body {
-  background: var(--cd-bg);
-  color: var(--cd-text);
+  background: #f4f5f7;
+  color: #0b0f14;
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -47,6 +49,47 @@ body {
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Payment panel: force readable light-theme contrast (do not inherit DOOH white text) */
+.codi-pay-panel {
+  color-scheme: light;
+  background: #ffffff;
+  color: #0b0f14;
+}
+
+.codi-pay-panel h1,
+.codi-pay-panel h2,
+.codi-pay-panel h3,
+.codi-pay-panel p,
+.codi-pay-panel span,
+.codi-pay-panel button,
+.codi-pay-panel label {
+  color: inherit;
+}
+
+.codi-pay-title {
+  color: #0b0f14 !important;
+}
+
+.codi-pay-subtitle {
+  color: #6b7280 !important;
+}
+
+.codi-pay-amount {
+  color: #0b0f14 !important;
+}
+
+.codi-pay-muted {
+  color: #6b7280 !important;
+}
+
+.codi-pay-secondary {
+  color: #4b5563 !important;
+}
+
+.codi-pay-success {
+  color: #099250 !important;
 }
 
 @keyframes successPop {
