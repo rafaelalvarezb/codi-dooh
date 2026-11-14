@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { markPaid } from "@/lib/payment-store";
+import { pulseRelay } from "@/lib/relay";
 
 /**
  * Pey webhook receiver for `codi.qr.payment_received`.
@@ -27,6 +28,16 @@ export async function POST(request: Request) {
       amount: body.amount,
       datePaid: body.datePaid,
     });
+
+    // Fire door/turnstile actuator (simulated until RELAY_BRIDGE_URL is set).
+    try {
+      await pulseRelay({
+        durationMs: 3000,
+        reason: `webhook:${body.codiQrId}`,
+      });
+    } catch (relayError) {
+      console.error("[webhook] relay pulse failed", relayError);
+    }
 
     return NextResponse.json({ received: true });
   } catch (error) {

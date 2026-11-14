@@ -5,13 +5,17 @@ import { useEffect, useRef, useState } from "react";
 import type { KioskProfile } from "@/lib/kiosk-profile";
 import type { CreateQrResponse, PaymentStatusResponse } from "@/lib/types";
 
-type PanelState = "standby" | "checkout" | "creating" | "awaiting" | "success" | "error";
+type PanelState =
+  | "standby"
+  | "checkout"
+  | "creating"
+  | "awaiting"
+  | "success"
+  | "error";
 
 interface CodiPanelProps {
   profile: KioskProfile;
-  /** Dynamic profiles start in standby until ticket/amount arrives. */
   sessionActive: boolean;
-  onStartSession?: () => void;
   onEndSession?: () => void;
 }
 
@@ -23,23 +27,35 @@ function formatMxn(amount: number): string {
   });
 }
 
-function formatStamp(date: Date): { folioHint: string; fecha: string; hora: string } {
-  const fecha = date.toLocaleDateString("es-MX", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-  const hora = date.toLocaleTimeString("es-MX", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return { folioHint: "", fecha, hora };
+function formatStamp(date: Date): { fecha: string; hora: string } {
+  return {
+    fecha: date.toLocaleDateString("es-MX", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }),
+    hora: date.toLocaleTimeString("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+}
+
+async function triggerRelay(reason: string) {
+  try {
+    await fetch("/api/relay/pulse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ durationMs: 3000, reason }),
+    });
+  } catch {
+    /* never block success UI on relay failure */
+  }
 }
 
 export function CodiPanel({
   profile,
   sessionActive,
-  onStartSession,
   onEndSession,
 }: CodiPanelProps) {
   const [state, setState] = useState<PanelState>(
@@ -51,6 +67,7 @@ export function CodiPanel({
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const pollRef = useRef<number | null>(null);
   const startedRef = useRef(false);
+  const relayFiredRef = useRef(false);
 
   useEffect(() => {
     if (profile.billingMode === "fixed") {
@@ -61,19 +78,17 @@ export function CodiPanel({
       setState("checkout");
       return;
     }
-    // Dynamic + no ticket/amount yet
     setState("standby");
     setQr(null);
     setErrorMessage(null);
     setPaidAt(null);
     setTransactionId(null);
     startedRef.current = false;
+    relayFiredRef.current = false;
     stopPolling();
   }, [profile.id, profile.billingMode, sessionActive]);
 
-  useEffect(() => {
-    return () => stopPolling();
-  }, []);
+  useEffect(() => () => stopPolling(), []);
 
   useEffect(() => {
     if (
@@ -85,9 +100,7 @@ export function CodiPanel({
       startedRef.current = true;
       void createQr();
     }
-    if (state === "standby") {
-      startedRef.current = false;
-    }
+    if (state === "standby") startedRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, profile.autoStartQr]);
 
@@ -107,17 +120,19 @@ export function CodiPanel({
           { cache: "no-store" },
         );
         const data = (await res.json()) as PaymentStatusResponse;
-        if (!res.ok) return;
-        if (data.paid) {
-          stopPolling();
-          setTransactionId(data.transactionId ?? qrId);
-          setPaidAt(new Date());
-          setState("success");
-          window.setTimeout(() => {
-            // Auto-return keeps bathroom ready and parking back to standby.
-            handleNewPayment();
-          }, 4000);
+        if (!res.ok || !data.paid) return;
+
+        stopPolling();
+        setTransactionId(data.transactionId ?? qrId);
+        setPaidAt(new Date());
+        setState("success");
+
+        if (!relayFiredRef.current) {
+          relayFiredRef.current = true;
+          void triggerRelay(`codi_paid:${qrId}`);
         }
+
+        window.setTimeout(() => handleNewPayment(), 4200);
       } catch {
         /* keep waiting */
       }
@@ -131,6 +146,7 @@ export function CodiPanel({
     setState("creating");
     setQr(null);
     stopPolling();
+    relayFiredRef.current = false;
     try {
       const res = await fetch("/api/codi/create-qr", {
         method: "POST",
@@ -162,6 +178,7 @@ export function CodiPanel({
     setTransactionId(null);
     setErrorMessage(null);
     startedRef.current = false;
+    relayFiredRef.current = false;
     if (profile.billingMode === "fixed") {
       setState("checkout");
     } else {
@@ -174,52 +191,59 @@ export function CodiPanel({
   const stamp = paidAt ? formatStamp(paidAt) : null;
   const folio = transactionId
     ? transactionId.slice(-8).toUpperCase()
-    : qr?.numRef ?? "—";
+    : (qr?.numRef ?? "—");
 
   return (
-    <aside className="relative flex h-full min-h-0 flex-col border-l border-[var(--cd-border)] bg-[var(--cd-surface)]">
-      <div className="flex items-center justify-between border-b border-[var(--cd-border)] px-6 py-4">
+    <aside className="relative flex h-full min-h-0 flex-col bg-white">
+      {/* Trust header */}
+      <div className="flex items-center gap-3 border-b border-[var(--cd-border)] px-7 py-5">
         <Image
           src="/brand/codi-logo.png"
           alt="CoDi"
-          width={112}
-          height={112}
-          className="h-10 w-10 rounded-[10px] object-cover"
+          width={128}
+          height={128}
+          className="h-12 w-12 rounded-[12px] object-cover shadow-sm"
           priority
         />
-        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--cd-text-muted)]">
-          Sin comisión
-        </p>
+        <div className="min-w-0 flex-1">
+          <p className="text-[17px] font-semibold tracking-tight text-[var(--cd-text)]">
+            Pago con CoDi
+          </p>
+          <p className="text-[13px] text-[var(--cd-text-muted)]">
+            Transferencia segura · Sin comisión
+          </p>
+        </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col px-6 py-6">
+      <div className="flex min-h-0 flex-1 flex-col px-7 py-7">
         {state === "standby" ? (
-          <div className="flex flex-1 flex-col justify-between">
-            <div>
-              <h2 className="text-[28px] font-semibold leading-tight tracking-tight text-[var(--cd-text)]">
-                {profile.standbyTitle}
-              </h2>
-              <p className="mt-3 text-[15px] leading-relaxed text-[var(--cd-text-secondary)]">
-                {profile.standbyBody}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[var(--cd-border)] bg-[var(--cd-surface-muted)] px-4 py-4">
-              <p className="text-[12px] font-medium text-[var(--cd-text-muted)]">
-                Listo para cobrar
-              </p>
-              <p className="mt-1 text-[15px] font-medium text-[var(--cd-text)]">
-                Escanea el QR CoDi® desde la app de tu banco cuando aparezca el
-                monto.
-              </p>
-              {onStartSession ? (
-                <button
-                  type="button"
-                  onClick={onStartSession}
-                  className="mt-4 w-full rounded-xl bg-[var(--cd-accent)] px-4 py-3.5 text-[15px] font-semibold text-white transition hover:opacity-90 active:scale-[0.99]"
-                >
-                  Simular boleto / monto
-                </button>
-              ) : null}
+          <div className="flex flex-1 flex-col">
+            <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-[var(--cd-text-muted)]">
+              Disponible
+            </p>
+            <h2 className="mt-2 text-[32px] font-semibold leading-[1.1] tracking-tight text-[var(--cd-text)]">
+              {profile.standbyTitle}
+            </h2>
+            <p className="mt-4 text-[16px] leading-relaxed text-[var(--cd-text-secondary)]">
+              {profile.standbyBody}
+            </p>
+            <div className="mt-auto rounded-3xl bg-[var(--cd-surface-muted)] px-5 py-5">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-semibold text-[var(--cd-text)] shadow-sm">
+                  1
+                </span>
+                <p className="text-[15px] leading-snug text-[var(--cd-text)]">
+                  Confirma tu boleto o monto en la máquina
+                </p>
+              </div>
+              <div className="mt-4 flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-semibold text-[var(--cd-text)] shadow-sm">
+                  2
+                </span>
+                <p className="text-[15px] leading-snug text-[var(--cd-text)]">
+                  Escanea el QR CoDi® desde la app de tu banco
+                </p>
+              </div>
             </div>
           </div>
         ) : null}
@@ -229,56 +253,48 @@ export function CodiPanel({
           state === "awaiting" ||
           state === "error") && (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div>
-              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-[var(--cd-text-muted)]">
-                Concepto
-              </p>
-              <h2 className="mt-1 text-[26px] font-semibold leading-tight tracking-tight text-[var(--cd-text)]">
-                {profile.serviceTitle}
-              </h2>
-              <p className="mt-5 text-[13px] font-medium text-[var(--cd-text-muted)]">
-                Total a pagar
-              </p>
-              <p className="mt-1 font-semibold tracking-tight text-[var(--cd-text)] text-[42px] leading-none">
-                {amountLabel}
-              </p>
-            </div>
+            <p className="text-[13px] font-medium text-[var(--cd-text-muted)]">
+              {profile.serviceTitle}
+            </p>
+            <p className="mt-3 text-[48px] font-semibold leading-none tracking-tight text-[var(--cd-text)]">
+              {amountLabel}
+            </p>
 
-            <div className="mt-6 flex min-h-0 flex-1 flex-col items-center justify-center">
+            <div className="mt-8 flex min-h-0 flex-1 flex-col items-center justify-center">
               {state === "creating" ? (
-                <div className="flex flex-col items-center gap-3 text-center">
-                  <div className="h-11 w-11 animate-spin rounded-full border-2 border-[var(--cd-border)] border-t-[var(--cd-accent)]" />
-                  <p className="text-sm text-[var(--cd-text-secondary)]">
-                    Preparando tu código CoDi…
+                <div className="flex flex-col items-center gap-4">
+                  <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-[var(--cd-border)] border-t-[var(--cd-accent)]" />
+                  <p className="text-[15px] text-[var(--cd-text-secondary)]">
+                    Generando código CoDi…
                   </p>
                 </div>
               ) : null}
 
               {state === "awaiting" && qr ? (
-                <div className="flex w-full flex-col items-center gap-4">
-                  <div className="rounded-2xl border border-[var(--cd-border)] bg-white p-3 shadow-[0_8px_30px_rgba(11,15,20,0.06)]">
+                <div className="flex w-full flex-col items-center">
+                  <div className="rounded-[28px] border border-[var(--cd-border)] bg-white p-4 shadow-[0_12px_40px_rgba(11,15,20,0.08)]">
                     {qr.qrImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={`data:image/png;base64,${qr.qrImage}`}
                         alt="Código QR CoDi"
-                        className="h-48 w-48 rounded-xl"
+                        className="h-56 w-56 rounded-2xl"
                       />
                     ) : (
                       <QrFallback payload={qr.qrString} />
                     )}
                   </div>
-                  <p className="max-w-[26ch] text-center text-[15px] font-medium leading-snug text-[var(--cd-text)]">
+                  <p className="mt-6 max-w-[22ch] text-center text-[17px] font-semibold leading-snug text-[var(--cd-text)]">
                     Escanea el QR CoDi® desde la app de tu banco
                   </p>
-                  <p className="animate-soft-pulse text-[13px] text-[var(--cd-text-muted)]">
-                    Esperando tu pago…
+                  <p className="mt-2 animate-soft-pulse text-[14px] text-[var(--cd-text-muted)]">
+                    Esperando confirmación…
                   </p>
                 </div>
               ) : null}
 
               {state === "error" ? (
-                <div className="w-full rounded-2xl border border-transparent bg-[var(--cd-danger-soft)] px-4 py-3 text-sm text-[var(--cd-danger)]">
+                <div className="w-full rounded-3xl bg-[var(--cd-danger-soft)] px-5 py-4 text-[15px] text-[var(--cd-danger)]">
                   {errorMessage}
                   <button
                     type="button"
@@ -286,30 +302,11 @@ export function CodiPanel({
                       startedRef.current = false;
                       void createQr();
                     }}
-                    className="mt-3 block w-full rounded-xl bg-[var(--cd-accent)] px-4 py-3 text-[14px] font-semibold text-white"
+                    className="mt-4 w-full rounded-2xl bg-[var(--cd-accent)] px-4 py-3.5 text-[15px] font-semibold text-white"
                   >
                     Reintentar
                   </button>
                 </div>
-              ) : null}
-
-              {state === "checkout" && !profile.autoStartQr ? (
-                <button
-                  type="button"
-                  onClick={() => void createQr()}
-                  className="mt-auto flex w-full items-center justify-center gap-3 rounded-2xl bg-[var(--cd-accent)] px-5 py-4 text-white transition hover:opacity-90 active:scale-[0.99]"
-                >
-                  <Image
-                    src="/brand/codi-logo.png"
-                    alt=""
-                    width={28}
-                    height={28}
-                    className="h-7 w-7 rounded-md object-cover"
-                  />
-                  <span className="text-[16px] font-semibold">
-                    Pagar con CoDi · {amountLabel}
-                  </span>
-                </button>
               ) : null}
             </div>
           </div>
@@ -318,12 +315,12 @@ export function CodiPanel({
         {state === "success" ? (
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <div
-              className="animate-success-pop flex h-20 w-20 items-center justify-center rounded-full"
+              className="animate-success-pop flex h-[88px] w-[88px] items-center justify-center rounded-full"
               style={{ background: "var(--cd-success-soft)" }}
             >
               <svg
                 viewBox="0 0 24 24"
-                className="h-10 w-10"
+                className="h-11 w-11"
                 style={{ color: "var(--cd-success)" }}
                 fill="none"
                 stroke="currentColor"
@@ -335,40 +332,46 @@ export function CodiPanel({
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </div>
-            <p className="mt-5 text-[28px] font-semibold tracking-tight text-[var(--cd-text)]">
+            <p className="mt-6 text-[30px] font-semibold tracking-tight text-[var(--cd-text)]">
               {profile.successMessage}
             </p>
-            <div className="mt-6 w-full rounded-2xl border border-[var(--cd-border)] bg-[var(--cd-surface-muted)] px-4 py-3 text-left text-[13px] text-[var(--cd-text-secondary)]">
-              <div className="flex justify-between gap-3">
-                <span>Folio</span>
-                <span className="font-mono font-medium text-[var(--cd-text)]">
-                  {folio}
-                </span>
-              </div>
-              <div className="mt-2 flex justify-between gap-3">
-                <span>Fecha</span>
-                <span className="font-medium text-[var(--cd-text)]">
-                  {stamp?.fecha ?? "—"}
-                </span>
-              </div>
-              <div className="mt-2 flex justify-between gap-3">
-                <span>Hora</span>
-                <span className="font-medium text-[var(--cd-text)]">
-                  {stamp?.hora ?? "—"}
-                </span>
-              </div>
+            <p className="mt-2 text-[15px] text-[var(--cd-text-secondary)]">
+              Acceso liberado
+            </p>
+
+            <div className="mt-8 w-full rounded-3xl bg-[var(--cd-surface-muted)] px-5 py-4 text-left text-[14px] text-[var(--cd-text-secondary)]">
+              <Row label="Folio" value={folio} mono />
+              <Row label="Fecha" value={stamp?.fecha ?? "—"} />
+              <Row label="Hora" value={stamp?.hora ?? "—"} />
             </div>
-            <button
-              type="button"
-              onClick={handleNewPayment}
-              className="mt-6 rounded-xl border border-[var(--cd-border)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--cd-text)]"
-            >
-              Listo
-            </button>
           </div>
         ) : null}
       </div>
     </aside>
+  );
+}
+
+function Row({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      <span>{label}</span>
+      <span
+        className={[
+          "font-medium text-[var(--cd-text)]",
+          mono ? "font-mono tracking-wide" : "",
+        ].join(" ")}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
 
@@ -380,7 +383,7 @@ function QrFallback({ payload }: { payload: string }) {
       const dataUrl = await QRCode.toDataURL(payload, {
         errorCorrectionLevel: "M",
         margin: 1,
-        width: 256,
+        width: 280,
         color: { dark: "#0B0F14", light: "#ffffff" },
       });
       if (!cancelled) setSrc(dataUrl);
@@ -389,13 +392,15 @@ function QrFallback({ payload }: { payload: string }) {
       cancelled = true;
     };
   }, [payload]);
+
   if (!src) {
     return (
-      <div className="flex h-48 w-48 items-center justify-center rounded-xl bg-[var(--cd-surface-muted)] text-xs text-[var(--cd-text-muted)]">
+      <div className="flex h-56 w-56 items-center justify-center rounded-2xl bg-[var(--cd-surface-muted)] text-sm text-[var(--cd-text-muted)]">
         Preparando QR…
       </div>
     );
   }
+
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="Código QR CoDi" className="h-48 w-48 rounded-xl" />;
+  return <img src={src} alt="Código QR CoDi" className="h-56 w-56 rounded-2xl" />;
 }

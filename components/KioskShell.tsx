@@ -7,10 +7,14 @@ import { DoohPlayer } from "@/components/DoohPlayer";
 import { resolveProfile, type KioskProfileId } from "@/lib/kiosk-profile";
 
 /**
- * Demo profiles via URL (hidden from end customers later via portal pairing):
- *   /?profile=bathroom  → cobro fijo siempre activo
- *   /?profile=parking   → espera boleto, luego cobro
- *   /?profile=laundry   → espera monto, luego cobro
+ * Profiles (later replaced by portal pairing):
+ *   /?profile=bathroom
+ *   /?profile=parking
+ *   /?profile=laundry
+ *
+ * Dynamic demo only (machine signal stub):
+ *   /?profile=parking&session=1  → shows active CoDi checkout
+ * In production, session=1 comes from relay/API bridge — never a visible button.
  */
 export function KioskShell() {
   const searchParams = useSearchParams();
@@ -18,14 +22,15 @@ export function KioskShell() {
     () => resolveProfile(searchParams.get("profile")),
     [searchParams],
   );
+  const sessionFromSignal = searchParams.get("session") === "1";
 
   const [sessionActive, setSessionActive] = useState(
-    profile.billingMode === "fixed",
+    profile.billingMode === "fixed" || sessionFromSignal,
   );
 
   useEffect(() => {
-    setSessionActive(profile.billingMode === "fixed");
-  }, [profile.id, profile.billingMode]);
+    setSessionActive(profile.billingMode === "fixed" || sessionFromSignal);
+  }, [profile.id, profile.billingMode, sessionFromSignal]);
 
   const dimAds = profile.billingMode === "fixed" || sessionActive;
 
@@ -36,11 +41,6 @@ export function KioskShell() {
         <CodiPanel
           profile={profile}
           sessionActive={sessionActive}
-          onStartSession={
-            profile.billingMode === "dynamic"
-              ? () => setSessionActive(true)
-              : undefined
-          }
           onEndSession={
             profile.billingMode === "dynamic"
               ? () => setSessionActive(false)
@@ -56,12 +56,12 @@ export function KioskShell() {
 
 function DemoProfileHints({ active }: { active: KioskProfileId }) {
   return (
-    <div className="pointer-events-none fixed bottom-3 left-3 z-50 flex gap-2 opacity-35 transition hover:opacity-100">
+    <div className="pointer-events-none fixed bottom-3 left-3 z-50 flex gap-2 opacity-30 transition hover:opacity-100">
       {(
         [
+          ["bathroom", "Baño"],
           ["parking", "Parking"],
           ["laundry", "Lavandería"],
-          ["bathroom", "Baño"],
         ] as const
       ).map(([id, label]) => (
         <a

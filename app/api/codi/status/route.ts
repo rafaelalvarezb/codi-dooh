@@ -83,6 +83,22 @@ export async function GET(request: Request) {
       );
     }
 
+    // Transient network blips to Pey should not break the kiosk wait loop.
+    const isNetwork =
+      error instanceof TypeError ||
+      (error instanceof Error &&
+        /fetch failed|timeout|ECONNRESET|ENOTFOUND/i.test(error.message));
+
+    if (isNetwork) {
+      console.warn("[status] transient Pey network error; treating as PENDING");
+      const payload: PaymentStatusResponse = {
+        qrId,
+        status: "PENDING",
+        paid: false,
+      };
+      return NextResponse.json(payload);
+    }
+
     console.error("[status]", error);
     return NextResponse.json(
       {
