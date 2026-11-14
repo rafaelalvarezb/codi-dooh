@@ -32,15 +32,16 @@ export function KioskShell() {
     setSessionActive(profile.billingMode === "fixed" || sessionFromSignal);
   }, [profile.id, profile.billingMode, sessionFromSignal]);
 
-  const dimAds = profile.billingMode === "fixed" || sessionActive;
-
   return (
     <div
       className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-zinc-100"
       style={{ colorScheme: "light" }}
     >
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[7fr_3fr]">
-        <DoohPlayer useCaseId={profile.useCaseId} dimmed={dimAds} />
+        <DoohPlayer
+          billingMode={profile.billingMode}
+          sessionActive={sessionActive}
+        />
         <CodiPanel
           profile={profile}
           sessionActive={sessionActive}
