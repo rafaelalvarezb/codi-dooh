@@ -28,7 +28,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (secrets / local config)
+# env files (secrets / local config) — never commit API keys
 .env
 .env.*
 !.env.example
@@ -46,6 +46,6 @@ next-env.d.ts
 *.swp
 *.swo
 
-# local / OS
+# OS
 Thumbs.db
 *.local
