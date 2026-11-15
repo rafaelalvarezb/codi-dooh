@@ -243,7 +243,7 @@ export function CodiPanel({
                   2
                 </span>
                 <p className="codi-pay-title text-[15px] leading-snug">
-                  Escanea el QR CoDi® desde la app de tu banco
+                  En tu banco, elige Transferir con código QR
                 </p>
               </div>
             </div>
@@ -286,11 +286,17 @@ export function CodiPanel({
                       <QrFallback payload={qr.qrString} />
                     )}
                   </div>
-                  <p className="codi-pay-title mt-6 max-w-[22ch] text-center text-[17px] font-semibold leading-snug">
-                    Escanea el QR CoDi® desde la app de tu banco
+                  <p className="codi-pay-title mt-5 max-w-[26ch] text-center text-[17px] font-semibold leading-snug">
+                    Escanea desde la app de tu banco
                   </p>
-                  <p className="codi-pay-muted mt-2 animate-soft-pulse text-[14px]">
-                    Esperando confirmación…
+                  <p className="codi-pay-secondary mt-2 max-w-[30ch] text-center text-[14px] leading-snug">
+                    En Transferir, elige «Con código QR»
+                  </p>
+                  <p className="codi-pay-hint mt-3 max-w-[28ch] text-center text-[12px] leading-snug">
+                    La cámara del celular no funciona con CoDi
+                  </p>
+                  <p className="codi-pay-muted mt-3 animate-soft-pulse text-[13px]">
+                    Esperando pago…
                   </p>
                 </div>
               ) : null}
