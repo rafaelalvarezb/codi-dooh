@@ -11,8 +11,8 @@ interface DoohPlayerProps {
 
 /**
  * Real video DOOH surface.
- * - Baño (fixed): muted rotation while paying.
- * - Parking/lavandería (dynamic): quiet idle frame; on ticket/session, play 6s bumpers.
+ * Uses object-contain so 16:9 bumpers are not cropped on the sides
+ * (letterbox bars instead of cutting the creative).
  */
 export function DoohPlayer({ billingMode, sessionActive }: DoohPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -41,7 +41,6 @@ export function DoohPlayer({ billingMode, sessionActive }: DoohPlayerProps) {
       void el.play().catch(() => undefined);
     } else {
       el.pause();
-      // Idle: hold a still frame (programmatic "static" feel between sessions)
       if (el.readyState >= 2) el.currentTime = 0.1;
     }
   }, [shouldPlay, creative?.id]);
@@ -70,7 +69,7 @@ export function DoohPlayer({ billingMode, sessionActive }: DoohPlayerProps) {
         <video
           key={creative.id}
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-contain bg-black"
           src={creative.src}
           muted
           playsInline
@@ -92,18 +91,8 @@ export function DoohPlayer({ billingMode, sessionActive }: DoohPlayerProps) {
           <p className="mt-3 max-w-md text-[18px] font-medium text-zinc-200">
             No hay creatividades cargadas
           </p>
-          <p className="mt-2 max-w-sm text-[14px] text-zinc-500">
-            Coloca MP4 en <span className="font-mono">public/ads/</span>
-          </p>
         </div>
       )}
-
-      <div
-        className={[
-          "pointer-events-none absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/35 transition-opacity duration-500",
-          shouldPlay ? "opacity-100" : "opacity-80",
-        ].join(" ")}
-      />
     </section>
   );
 }

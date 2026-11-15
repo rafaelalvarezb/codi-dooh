@@ -7,14 +7,14 @@ import { DoohPlayer } from "@/components/DoohPlayer";
 import { resolveProfile, type KioskProfileId } from "@/lib/kiosk-profile";
 
 /**
- * Profiles (later replaced by portal pairing):
+ * Profiles:
  *   /?profile=bathroom
  *   /?profile=parking
  *   /?profile=laundry
+ *   /?profile=parking&session=1
  *
- * Dynamic demo only (machine signal stub):
- *   /?profile=parking&session=1  → shows active CoDi checkout
- * In production, session=1 comes from relay/API bridge — never a visible button.
+ * On desktop, the shell is framed like a ~10" landscape tablet (16:10)
+ * so DOOH creatives preview closer to the real device.
  */
 export function KioskShell() {
   const searchParams = useSearchParams();
@@ -34,33 +34,35 @@ export function KioskShell() {
 
   return (
     <div
-      className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-zinc-100"
+      className="flex h-dvh max-h-dvh w-full items-center justify-center overflow-hidden bg-zinc-300 p-3 sm:p-6"
       style={{ colorScheme: "light" }}
     >
-      <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[7fr_3fr]">
-        <DoohPlayer
-          billingMode={profile.billingMode}
-          sessionActive={sessionActive}
-        />
-        <CodiPanel
-          profile={profile}
-          sessionActive={sessionActive}
-          onEndSession={
-            profile.billingMode === "dynamic"
-              ? () => setSessionActive(false)
-              : undefined
-          }
-        />
-      </main>
+      <div className="relative flex h-full w-full max-h-[720px] max-w-[1152px] flex-col overflow-hidden rounded-[28px] border border-zinc-400/40 bg-zinc-100 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+        <main className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[7fr_3fr]">
+          <DoohPlayer
+            billingMode={profile.billingMode}
+            sessionActive={sessionActive}
+          />
+          <CodiPanel
+            profile={profile}
+            sessionActive={sessionActive}
+            onEndSession={
+              profile.billingMode === "dynamic"
+                ? () => setSessionActive(false)
+                : undefined
+            }
+          />
+        </main>
 
-      <DemoProfileHints active={profile.id} />
+        <DemoProfileHints active={profile.id} />
+      </div>
     </div>
   );
 }
 
 function DemoProfileHints({ active }: { active: KioskProfileId }) {
   return (
-    <div className="pointer-events-none fixed bottom-3 left-3 z-50 flex gap-2 opacity-30 transition hover:opacity-100">
+    <div className="pointer-events-none absolute bottom-3 left-3 z-50 flex gap-2 opacity-40 transition hover:opacity-100">
       {(
         [
           ["bathroom", "Baño"],
@@ -75,7 +77,7 @@ function DemoProfileHints({ active }: { active: KioskProfileId }) {
             "pointer-events-auto rounded-full border px-2.5 py-1 text-[10px] font-medium backdrop-blur",
             active === id
               ? "border-black/20 bg-white text-black"
-              : "border-white/25 bg-black/45 text-white",
+              : "border-white/25 bg-black/55 text-white",
           ].join(" ")}
         >
           {label}
