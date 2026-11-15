@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import QRCode from "qrcode";
 import { touchMachine } from "@/lib/machines";
 import { markPending } from "@/lib/payment-store";
 import { createCodiQr, PeyApiError } from "@/lib/pey";
@@ -9,6 +10,31 @@ import {
   getUseCase,
 } from "@/lib/use-cases";
 import type { CreateQrResponse, UseCaseId } from "@/lib/types";
+
+const DEMO_QR_PAYLOAD =
+  "00020126580014mx.banxico.codi01000210MX0321234567890123456789012345203MXN5204599953037605802MX5916COMERCIO DE PRUEB6009CIUDAD MX63044B3A";
+
+async function createMockQr() {
+  const mockId = `mock_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const dataUrl = await QRCode.toDataURL(DEMO_QR_PAYLOAD, {
+    errorCorrectionLevel: "M",
+    margin: 1,
+    width: 236,
+    color: { dark: "#0A0A0B", light: "#ffffff" },
+  });
+  // Strip data-url prefix — UI adds it (Pey returns raw base64).
+  const qrImage = dataUrl.replace(/^data:image\/png;base64,/, "");
+  return {
+    id: mockId,
+    qrString: DEMO_QR_PAYLOAD,
+    qrImage,
+  };
+}
+
+function shouldUseMock(): boolean {
+  const apiKey = process.env.PEY_API_KEY;
+  return !apiKey || apiKey === "sk_live_your_key_here";
+}
 
 export async function POST(request: Request) {
   try {
@@ -22,19 +48,21 @@ export async function POST(request: Request) {
     const numRef = buildNumRef();
     const machineId = body.machineId || useCase.id;
 
-    const peyQr = await createCodiQr({
-      amount: HACKATHON_AMOUNT_MXN,
-      concept,
-      expiration: 600,
-      numRef,
-      generateImage: true,
-      metadata: {
-        product: "codi-dooh",
-        useCase: useCase.id,
-        ticket: useCase.ticketLabel,
-        machineId,
-      },
-    });
+    const peyQr = shouldUseMock()
+      ? await createMockQr()
+      : await createCodiQr({
+          amount: HACKATHON_AMOUNT_MXN,
+          concept,
+          expiration: 600,
+          numRef,
+          generateImage: true,
+          metadata: {
+            product: "codi-dooh",
+            useCase: useCase.id,
+            ticket: useCase.ticketLabel,
+            machineId,
+          },
+        });
 
     markPending(peyQr.id, {
       machineId,

@@ -454,7 +454,11 @@ export function CodiPanel({
           {qr?.qrImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`data:image/png;base64,${qr.qrImage}`}
+              src={
+                qr.qrImage.startsWith("data:")
+                  ? qr.qrImage
+                  : `data:image/png;base64,${qr.qrImage}`
+              }
               alt="Código QR CoDi"
               className="h-[236px] w-[236px]"
             />
