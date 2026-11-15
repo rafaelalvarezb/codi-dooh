@@ -39,32 +39,49 @@ function getBaseUrl(): string {
 
 async function peyFetch<T>(
   path: string,
-  init?: RequestInit,
+  init?: RequestInit & { timeoutMs?: number },
 ): Promise<T> {
   const url = `${getBaseUrl()}${path}`;
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getApiKey()}`,
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+  const { timeoutMs, ...fetchInit } = init ?? {};
+  const controller = new AbortController();
+  const timer =
+    typeof timeoutMs === "number" && timeoutMs > 0
+      ? setTimeout(() => controller.abort(), timeoutMs)
+      : null;
 
-  const body = (await response.json().catch(() => ({}))) as T & PeyErrorBody;
+  try {
+    const response = await fetch(url, {
+      ...fetchInit,
+      signal: fetchInit.signal ?? controller.signal,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getApiKey()}`,
+        ...(fetchInit.headers ?? {}),
+      },
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
-    throw new PeyApiError(
-      body.error?.message ?? `Pey API error (${response.status})`,
-      response.status,
-      body.error?.type,
-      body.error?.requestId,
-    );
+    const body = (await response.json().catch(() => ({}))) as T & PeyErrorBody;
+
+    if (!response.ok) {
+      throw new PeyApiError(
+        body.error?.message ?? `Pey API error (${response.status})`,
+        response.status,
+        body.error?.type,
+        body.error?.requestId,
+      );
+    }
+
+    return body;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new TypeError(`Pey request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-
-  return body;
 }
 
 export interface CreatePeyQrInput {
@@ -122,8 +139,10 @@ export async function createCodiQr(
 export async function getCodiQrTransactions(
   qrId: string,
 ): Promise<PeyQrTransactionsResult> {
+  // Keep status polling snappy; transient timeouts are treated as PENDING.
   return peyFetch<PeyQrTransactionsResult>(
     `/transaction/codi/qr/${encodeURIComponent(qrId)}`,
+    { timeoutMs: 4000 },
   );
 }
 

@@ -90,7 +90,7 @@ export async function GET(request: Request) {
         /fetch failed|timeout|ECONNRESET|ENOTFOUND/i.test(error.message));
 
     if (isNetwork) {
-      console.warn("[status] transient Pey network error; treating as PENDING");
+      console.warn("[status] Pey unreachable briefly; keeping PENDING");
       const payload: PaymentStatusResponse = {
         qrId,
         status: "PENDING",
