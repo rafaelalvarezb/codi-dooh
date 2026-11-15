@@ -497,27 +497,21 @@ export function CodiPanel({
   );
 }
 
-/** Sí primero (banco), No después (cámara) — alineado al feedback de prueba. */
+/** Una línea: banco sí (izq) → cámara no (der). */
 function ContrastCompare() {
   return (
     <div className="mt-3 grid grid-cols-2 gap-2">
-      <div className="flex items-center gap-2.5 rounded-2xl bg-[var(--cd-success-soft)] px-3 py-2.5">
+      <div className="flex items-center gap-2 rounded-[999px] bg-[var(--cd-success-soft)] px-3.5 py-2.5">
         <BankIcon />
-        <div>
-          <b className="block text-[13px] font-medium text-[var(--cd-ink)]">
-            App del banco
-          </b>
-          <span className="text-[12px] text-[var(--cd-ink-2)]">Así sí</span>
-        </div>
+        <span className="text-[13px] font-medium leading-none text-[var(--cd-ink)]">
+          App del banco: sí
+        </span>
       </div>
-      <div className="flex items-center gap-2.5 rounded-2xl bg-[var(--cd-danger-soft)] px-3 py-2.5">
+      <div className="flex items-center gap-2 rounded-[999px] bg-[var(--cd-danger-soft)] px-3.5 py-2.5">
         <CameraOffIcon />
-        <div>
-          <b className="block text-[13px] font-medium text-[var(--cd-ink)]">
-            Cámara
-          </b>
-          <span className="text-[12px] text-[var(--cd-ink-2)]">No</span>
-        </div>
+        <span className="text-[13px] font-medium leading-none text-[var(--cd-ink)]">
+          Cámara: no
+        </span>
       </div>
     </div>
   );

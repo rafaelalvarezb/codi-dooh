@@ -13,7 +13,7 @@ Reglas no negociables:
 - La única marca visible es CoDi (public/brand/codi-logo.png). Logo a 72px en el bloque night (variante contraste). Nunca encima del QR.
 - El QR se muestra tal como lo entrega CoDi, sin logo, recortes ni recolor; mínimo 230px de lado.
 - Variante de producción: **contraste** (bloque night + QR). No uses el layout “comparativo” claro.
-- Comparativo compacto: primero "App del banco / Así sí", luego "Cámara / No".
+- Comparativo compacto en una línea: primero "App del banco: sí", luego "Cámara: no".
 - Ruta: Abre tu banco › Transferir › Escanea › Confirma.
 - Copy en español de México, tuteo, frases cortas, sin signos de exclamación ni emoji. Usa el copy de SPEC.md al pie de la letra.
 - En errores, solo qué pasó; sin pasos a seguir.

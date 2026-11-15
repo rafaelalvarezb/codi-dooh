@@ -30,9 +30,8 @@
   .white { flex: 1; display: flex; flex-direction: column; padding: 20px 32px 0; }
   .hint { font-size: 20px; font-weight: 500; letter-spacing: -.015em; }
   .compare { margin-top: 12px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
-  .cmp { border-radius: var(--cd-radius-md); padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .cmp { border-radius: 999px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; line-height: 1; }
   .cmp.yes { background: var(--cd-success-soft); } .cmp.no { background: var(--cd-danger-soft); }
-  .cmp b { display: block; font-size: 13px; font-weight: 500; } .cmp span { font-size: 12px; color: var(--cd-ink-2); }
   .steps { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; font-size: var(--cd-small); color: var(--cd-ink-2); }
   .steps i { font-style: normal; color: var(--cd-subtle); } .steps strong { font-weight: 500; color: var(--cd-ink); }
   .grow { flex: 1; }
@@ -85,8 +84,8 @@ function render() {
       <div class="white">
         <div class="hint">Solo con la app de tu banco</div>
         <div class="compare">
-          <div class="cmp yes"><div><b>App del banco</b><span>Así sí</span></div></div>
-          <div class="cmp no"><div><b>Cámara</b><span>No</span></div></div>
+          <div class="cmp yes">App del banco: sí</div>
+          <div class="cmp no">Cámara: no</div>
         </div>
         <div class="steps">Abre tu banco <i>›</i> Transferir <i>›</i> <strong>Escanea</strong> <i>›</i> Confirma</div>
         <div class="grow"></div>

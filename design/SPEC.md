@@ -34,9 +34,9 @@ De arriba a abajo:
    - QR 236×236 en tarjeta blanca (radio 16, padding 12). Sin logo encima.
 2. **Zona blanca** abajo:
    - Título: "Solo con la app de tu banco" (20/500).
-   - Comparativo compacto (grid 2 col, gap 8) — **primero el sí**:
-     - Verde suave: icono banco + "App del banco" / "Así sí".
-     - Rojo suave: icono cámara tachada + "Cámara" / "No".
+   - Comparativo compacto (grid 2 col, gap 8), **una sola línea de texto** — primero el sí:
+     - Verde suave (pill): icono banco + "App del banco: sí".
+     - Rojo suave (pill): icono cámara tachada + "Cámara: no".
    - Ruta (13): Abre tu banco › Transferir › **Escanea** › Confirma.
    - Footer: punto azul + "Esperando pago" · "Vence en m:ss".
 
