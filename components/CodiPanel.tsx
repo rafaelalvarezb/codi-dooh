@@ -7,16 +7,19 @@ import type { CreateQrResponse, PaymentStatusResponse } from "@/lib/types";
 
 type PanelState =
   | "standby"
-  | "checkout"
   | "creating"
-  | "awaiting"
-  | "success"
-  | "error";
+  | "esperando"
+  | "confirmando"
+  | "recibido"
+  | "rechazado"
+  | "vencido"
+  | "no-disponible";
 
 interface CodiPanelProps {
   profile: KioskProfile;
   sessionActive: boolean;
   onEndSession?: () => void;
+  machineId?: string;
 }
 
 function formatMxn(amount: number): string {
@@ -27,18 +30,10 @@ function formatMxn(amount: number): string {
   });
 }
 
-function formatStamp(date: Date): { fecha: string; hora: string } {
-  return {
-    fecha: date.toLocaleDateString("es-MX", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }),
-    hora: date.toLocaleTimeString("es-MX", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  };
+function formatTimer(seconds: number): string {
+  const m = Math.floor(Math.max(0, seconds) / 60);
+  const s = Math.max(0, seconds) % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 async function triggerRelay(reason: string) {
@@ -57,58 +52,77 @@ export function CodiPanel({
   profile,
   sessionActive,
   onEndSession,
+  machineId,
 }: CodiPanelProps) {
   const [state, setState] = useState<PanelState>(
-    profile.billingMode === "fixed" ? "checkout" : "standby",
+    profile.billingMode === "fixed" || sessionActive ? "creating" : "standby",
   );
   const [qr, setQr] = useState<CreateQrResponse | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [paidAt, setPaidAt] = useState<Date | null>(null);
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(300);
   const pollRef = useRef<number | null>(null);
+  const timerRef = useRef<number | null>(null);
   const startedRef = useRef(false);
   const relayFiredRef = useRef(false);
+  const confirmingRef = useRef(false);
 
   useEffect(() => {
-    if (profile.billingMode === "fixed") {
-      setState("checkout");
-      return;
-    }
-    if (sessionActive) {
-      setState("checkout");
+    if (profile.billingMode === "fixed" || sessionActive) {
+      if (!startedRef.current) {
+        startedRef.current = true;
+        void createQr();
+      }
       return;
     }
     setState("standby");
     setQr(null);
-    setErrorMessage(null);
     setPaidAt(null);
     setTransactionId(null);
     startedRef.current = false;
     relayFiredRef.current = false;
+    confirmingRef.current = false;
     stopPolling();
+    stopTimer();
   }, [profile.id, profile.billingMode, sessionActive]);
 
-  useEffect(() => () => stopPolling(), []);
-
-  useEffect(() => {
-    if (
-      state === "checkout" &&
-      profile.autoStartQr &&
-      !startedRef.current &&
-      !qr
-    ) {
-      startedRef.current = true;
-      void createQr();
-    }
-    if (state === "standby") startedRef.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, profile.autoStartQr]);
+  useEffect(() => () => {
+    stopPolling();
+    stopTimer();
+  }, []);
 
   function stopPolling() {
     if (pollRef.current) {
       window.clearInterval(pollRef.current);
       pollRef.current = null;
     }
+  }
+
+  function stopTimer() {
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }
+
+  function startExpiryTimer(expiresIn: number) {
+    stopTimer();
+    setSecondsLeft(expiresIn);
+    timerRef.current = window.setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          stopTimer();
+          stopPolling();
+          setState("vencido");
+          window.setTimeout(() => {
+            startedRef.current = false;
+            void createQr();
+          }, 1600);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   }
 
   function startPolling(qrId: string) {
@@ -122,17 +136,23 @@ export function CodiPanel({
         const data = (await res.json()) as PaymentStatusResponse;
         if (!res.ok || !data.paid) return;
 
+        if (!confirmingRef.current) {
+          confirmingRef.current = true;
+          setState("confirmando");
+        }
+
         stopPolling();
+        stopTimer();
         setTransactionId(data.transactionId ?? qrId);
         setPaidAt(new Date());
-        setState("success");
+        setState("recibido");
 
         if (!relayFiredRef.current) {
           relayFiredRef.current = true;
           void triggerRelay(`codi_paid:${qrId}`);
         }
 
-        window.setTimeout(() => handleNewPayment(), 4200);
+        window.setTimeout(() => handleNewPayment(), 8000);
       } catch {
         /* keep waiting */
       }
@@ -142,16 +162,20 @@ export function CodiPanel({
   }
 
   async function createQr() {
-    setErrorMessage(null);
     setState("creating");
     setQr(null);
     stopPolling();
+    stopTimer();
     relayFiredRef.current = false;
+    confirmingRef.current = false;
     try {
       const res = await fetch("/api/codi/create-qr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ useCaseId: profile.useCaseId }),
+        body: JSON.stringify({
+          useCaseId: profile.useCaseId,
+          machineId: machineId ?? profile.id,
+        }),
       });
       const data = (await res.json()) as CreateQrResponse & {
         error?: { message?: string };
@@ -160,27 +184,26 @@ export function CodiPanel({
         throw new Error(data.error?.message ?? "No se pudo generar el QR.");
       }
       setQr(data);
-      setState("awaiting");
+      setState("esperando");
+      startExpiryTimer(data.expiration ?? 300);
       startPolling(data.qrId);
-    } catch (error) {
-      setState("error");
-      setErrorMessage(
-        error instanceof Error ? error.message : "Error inesperado.",
-      );
+    } catch {
+      setState("no-disponible");
       startedRef.current = false;
     }
   }
 
   function handleNewPayment() {
     stopPolling();
+    stopTimer();
     setQr(null);
     setPaidAt(null);
     setTransactionId(null);
-    setErrorMessage(null);
     startedRef.current = false;
     relayFiredRef.current = false;
+    confirmingRef.current = false;
     if (profile.billingMode === "fixed") {
-      setState("checkout");
+      void createQr();
     } else {
       setState("standby");
       onEndSession?.();
@@ -188,174 +211,359 @@ export function CodiPanel({
   }
 
   const amountLabel = formatMxn(profile.amountMxn);
-  const stamp = paidAt ? formatStamp(paidAt) : null;
   const folio = transactionId
     ? transactionId.slice(-8).toUpperCase()
     : (qr?.numRef ?? "—");
+  const hora = paidAt
+    ? paidAt.toLocaleTimeString("es-MX", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
 
-  return (
-    <aside
-      className="codi-pay-panel relative flex h-full min-h-0 flex-col border-l border-zinc-200 bg-white"
-      style={{ color: "#0B0F14", backgroundColor: "#FFFFFF" }}
-    >
-      <div className="flex items-center gap-3 border-b border-zinc-200 px-7 py-5">
-        <Image
-          src="/brand/codi-logo.png"
-          alt="CoDi"
-          width={128}
-          height={128}
-          className="h-12 w-12 rounded-[12px] object-cover shadow-sm"
-          priority
-        />
-        <div className="min-w-0 flex-1">
-          <p className="codi-pay-title text-[17px] font-semibold tracking-tight">
-            Pago con CoDi
+  if (state === "standby") {
+    return (
+      <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
+        <div className="flex flex-1 flex-col px-10 pt-8">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/brand/codi-logo.png"
+              alt="CoDi"
+              width={64}
+              height={64}
+              className="h-16 w-16 rounded-2xl object-cover"
+              priority
+            />
+            <div>
+              <p className="text-[24px] font-medium tracking-[-0.015em] text-[var(--cd-ink)]">
+                Paga con CoDi
+              </p>
+              <p className="text-[13px] text-[var(--cd-muted)]">
+                Sistema del Banco de México
+              </p>
+            </div>
+          </div>
+          <h2 className="mt-8 text-[30px] font-medium tracking-[-0.02em] text-[var(--cd-ink)]">
+            {profile.standbyTitle}
+          </h2>
+          <p className="mt-3 text-[15px] leading-relaxed text-[var(--cd-ink-2)]">
+            {profile.standbyBody}
           </p>
-          <p className="codi-pay-subtitle text-[13px]">
-            Transferencia segura · Sin comisión
+          <div className="mt-auto pb-6">
+            <CompareBlock />
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  if (state === "creating") {
+    return (
+      <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
+        <div className="flex flex-1 flex-col items-center justify-center px-10 text-center">
+          <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-[var(--cd-accent-soft)]">
+            <div className="h-9 w-9 animate-cd-spin rounded-full border-[3px] border-[rgba(43,80,255,0.2)] border-t-[var(--cd-accent)]" />
+          </div>
+          <p className="mt-7 text-[30px] font-medium tracking-[-0.02em]">
+            Generando código
+          </p>
+          <p className="mt-2 text-[15px] text-[var(--cd-muted)]">
+            Un momento…
           </p>
         </div>
-      </div>
+      </aside>
+    );
+  }
 
-      <div className="flex min-h-0 flex-1 flex-col px-7 py-7">
-        {state === "standby" ? (
-          <div className="flex flex-1 flex-col">
-            <p className="codi-pay-muted text-[13px] font-medium uppercase tracking-[0.14em]">
-              Disponible
-            </p>
-            <h2 className="codi-pay-title mt-2 text-[32px] font-semibold leading-[1.1] tracking-tight">
-              {profile.standbyTitle}
-            </h2>
-            <p className="codi-pay-secondary mt-4 text-[16px] leading-relaxed">
-              {profile.standbyBody}
-            </p>
-            <div className="mt-auto rounded-3xl bg-zinc-100 px-5 py-5">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-semibold text-zinc-950 shadow-sm">
-                  1
-                </span>
-                <p className="codi-pay-title text-[15px] leading-snug">
-                  Confirma tu boleto o monto en la máquina
-                </p>
-              </div>
-              <div className="mt-4 flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-semibold text-zinc-950 shadow-sm">
-                  2
-                </span>
-                <p className="codi-pay-title text-[15px] leading-snug">
-                  En tu banco, elige Transferir con código QR
-                </p>
-              </div>
-            </div>
+  if (state === "confirmando") {
+    return (
+      <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
+        <div className="flex flex-1 flex-col items-center justify-center px-10 text-center">
+          <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-[var(--cd-accent-soft)]">
+            <div className="h-9 w-9 animate-cd-spin rounded-full border-[3px] border-[rgba(43,80,255,0.2)] border-t-[var(--cd-accent)]" />
           </div>
-        ) : null}
+          <p className="mt-7 text-[30px] font-medium tracking-[-0.02em]">
+            Confirmando pago
+          </p>
+          <p className="mt-2 text-[20px] text-[var(--cd-ink-2)]">
+            {amountLabel} MXN
+          </p>
+        </div>
+      </aside>
+    );
+  }
 
-        {(state === "checkout" ||
-          state === "creating" ||
-          state === "awaiting" ||
-          state === "error") && (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <p className="codi-pay-muted text-[13px] font-medium">
-              {profile.serviceTitle}
+  if (state === "recibido") {
+    return (
+      <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
+        <div className="flex flex-1 flex-col items-center px-10 pt-20 text-center">
+          <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-[var(--cd-success-soft)]">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-11 w-11 text-[var(--cd-success)]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </div>
+          <p className="mt-7 text-[30px] font-medium tracking-[-0.02em]">
+            Pago recibido
+          </p>
+          <p className="mt-2 text-[20px] text-[var(--cd-ink-2)]">
+            {profile.successMessage}
+          </p>
+          <div className="mt-9 w-full rounded-2xl bg-[var(--cd-surface)] px-5 py-4 text-left text-[13px]">
+            <ReceiptRow
+              label="Concepto"
+              value={`${profile.serviceTitle} · ${amountLabel}`}
+            />
+            <div className="flex items-center justify-between gap-3 py-1.5">
+              <span className="text-[var(--cd-muted)]">Método</span>
+              <span className="flex items-center gap-2 font-medium">
+                <Image
+                  src="/brand/codi-logo.png"
+                  alt="CoDi"
+                  width={20}
+                  height={20}
+                  className="h-5 w-5 rounded-[5px] object-cover"
+                />
+                CoDi
+              </span>
+            </div>
+            <ReceiptRow label="Referencia" value={folio} mono />
+            <ReceiptRow label="Hora" value={hora} mono />
+          </div>
+        </div>
+        <div className="px-10 pb-7">
+          <div className="h-[3px] overflow-hidden rounded-full bg-[var(--cd-line)]">
+            <div className="h-full w-full origin-left animate-cd-bar bg-[var(--cd-success)]" />
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  if (state === "rechazado") {
+    return (
+      <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
+        <div className="flex flex-1 flex-col items-center justify-center px-10 text-center">
+          <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-[var(--cd-danger-soft)] text-[32px] text-[var(--cd-danger)]">
+            ✕
+          </div>
+          <p className="mt-7 text-[30px] font-medium tracking-[-0.02em]">
+            No se completó el pago
+          </p>
+          <p className="mt-2 max-w-[28ch] text-[15px] leading-relaxed text-[var(--cd-muted)]">
+            Tu banco no confirmó la transferencia.
+          </p>
+        </div>
+        <div className="px-10 pb-7">
+          <div className="h-[3px] overflow-hidden rounded-full bg-[var(--cd-line)]">
+            <div className="h-full w-full origin-left animate-cd-bar bg-[var(--cd-ink)]" />
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  if (state === "vencido") {
+    return (
+      <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
+        <div className="flex flex-1 flex-col items-center justify-center px-10 text-center">
+          <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-[var(--cd-surface)] text-[28px] text-[var(--cd-muted)]">
+            ◷
+          </div>
+          <p className="mt-7 text-[30px] font-medium tracking-[-0.02em]">
+            El código venció
+          </p>
+          <p className="mt-2 text-[15px] text-[var(--cd-muted)]">
+            Generando uno nuevo
+          </p>
+        </div>
+      </aside>
+    );
+  }
+
+  if (state === "no-disponible") {
+    return (
+      <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
+        <div className="flex flex-1 flex-col items-center justify-center px-10 text-center">
+          <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-[var(--cd-surface)] text-[28px] text-[var(--cd-muted)]">
+            ⊘
+          </div>
+          <p className="mt-7 text-[30px] font-medium tracking-[-0.02em] text-balance">
+            CoDi no está disponible por ahora
+          </p>
+          <p className="mt-2 text-[15px] text-[var(--cd-muted)]">
+            Usa otro método de pago.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              startedRef.current = false;
+              void createQr();
+            }}
+            className="mt-8 min-h-[56px] w-full rounded-2xl bg-[var(--cd-ink)] px-4 text-[15px] font-medium text-white"
+          >
+            Reintentar
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  /* esperando */
+  return (
+    <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
+      <div className="flex min-h-0 flex-1 flex-col px-10 pt-8">
+        <div className="flex items-center gap-4">
+          <Image
+            src="/brand/codi-logo.png"
+            alt="CoDi"
+            width={64}
+            height={64}
+            className="h-16 w-16 rounded-2xl object-cover"
+            priority
+          />
+          <div>
+            <p className="text-[24px] font-medium tracking-[-0.015em] text-[var(--cd-ink)]">
+              Paga con CoDi
             </p>
-            <p className="codi-pay-amount mt-3 text-[48px] font-semibold leading-none tracking-tight">
+            <p className="text-[13px] text-[var(--cd-muted)]">
+              Sistema del Banco de México
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-baseline justify-between gap-3 border-t border-[var(--cd-line)] pt-[18px]">
+          <span className="text-[13px] text-[var(--cd-muted)]">
+            {profile.serviceTitle}
+          </span>
+          <div>
+            <span className="text-[44px] font-medium leading-none tracking-[-0.035em] text-[var(--cd-ink)]">
               {amountLabel}
-            </p>
-
-            <div className="mt-8 flex min-h-0 flex-1 flex-col items-center justify-center">
-              {state === "creating" ? (
-                <div className="flex flex-col items-center gap-4">
-                  <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-zinc-200 border-t-zinc-950" />
-                  <p className="codi-pay-secondary text-[15px]">
-                    Generando código CoDi…
-                  </p>
-                </div>
-              ) : null}
-
-              {state === "awaiting" && qr ? (
-                <div className="flex w-full flex-col items-center">
-                  <div className="rounded-[28px] border border-zinc-200 bg-white p-4 shadow-[0_12px_40px_rgba(11,15,20,0.08)]">
-                    {qr.qrImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={`data:image/png;base64,${qr.qrImage}`}
-                        alt="Código QR CoDi"
-                        className="h-56 w-56 rounded-2xl"
-                      />
-                    ) : (
-                      <QrFallback payload={qr.qrString} />
-                    )}
-                  </div>
-                  <p className="codi-pay-title mt-5 max-w-[26ch] text-center text-[17px] font-semibold leading-snug">
-                    Escanea desde la app de tu banco
-                  </p>
-                  <p className="codi-pay-secondary mt-2 max-w-[30ch] text-center text-[14px] leading-snug">
-                    En Transferir, elige «Con código QR»
-                  </p>
-                  <p className="codi-pay-hint mt-3 max-w-[28ch] text-center text-[12px] leading-snug">
-                    La cámara del celular no funciona con CoDi
-                  </p>
-                  <p className="codi-pay-muted mt-3 animate-soft-pulse text-[13px]">
-                    Esperando pago…
-                  </p>
-                </div>
-              ) : null}
-
-              {state === "error" ? (
-                <div className="w-full rounded-3xl bg-red-50 px-5 py-4 text-[15px] text-red-700">
-                  {errorMessage}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      startedRef.current = false;
-                      void createQr();
-                    }}
-                    className="mt-4 w-full rounded-2xl bg-zinc-950 px-4 py-3.5 text-[15px] font-semibold text-white"
-                  >
-                    Reintentar
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            </span>
+            <span className="ml-1.5 font-mono text-[12px] text-[var(--cd-muted)]">
+              MXN
+            </span>
           </div>
-        )}
+        </div>
 
-        {state === "success" ? (
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <div className="animate-success-pop flex h-[88px] w-[88px] items-center justify-center rounded-full bg-emerald-50">
-              <svg
-                viewBox="0 0 24 24"
-                className="h-11 w-11 text-emerald-600"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-            </div>
-            <p className="codi-pay-title mt-6 text-[30px] font-semibold tracking-tight">
-              {profile.successMessage}
-            </p>
-            <p className="codi-pay-success mt-2 text-[15px] font-medium">
-              Acceso liberado
-            </p>
+        <div className="mt-[18px] flex justify-center rounded-3xl border border-[var(--cd-line)] p-4">
+          {qr?.qrImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`data:image/png;base64,${qr.qrImage}`}
+              alt="Código QR CoDi"
+              className="h-[284px] w-[284px]"
+            />
+          ) : qr ? (
+            <QrFallback payload={qr.qrString} />
+          ) : null}
+        </div>
 
-            <div className="mt-8 w-full rounded-3xl bg-zinc-100 px-5 py-4 text-left text-[14px]">
-              <Row label="Folio" value={folio} mono />
-              <Row label="Fecha" value={stamp?.fecha ?? "—"} />
-              <Row label="Hora" value={stamp?.hora ?? "—"} />
-            </div>
+        <CompareBlock />
+
+        <p className="mt-3.5 flex flex-wrap gap-1.5 text-[13px] text-[var(--cd-ink-2)]">
+          <span>Abre tu banco</span>
+          <span className="text-[var(--cd-subtle)]">›</span>
+          <span>Transferir</span>
+          <span className="text-[var(--cd-subtle)]">›</span>
+          <strong className="font-medium text-[var(--cd-ink)]">QR CoDi</strong>
+          <span className="text-[var(--cd-subtle)]">›</span>
+          <span>Confirma</span>
+        </p>
+
+        <div className="flex-1" />
+
+        <div className="flex items-center justify-between border-t border-[var(--cd-line)] py-4 pb-5">
+          <div className="flex items-center gap-2.5 text-[13px] font-medium">
+            <span className="h-2 w-2 animate-cd-pulse rounded-full bg-[var(--cd-accent)]" />
+            Esperando pago
           </div>
-        ) : null}
+          <div className="font-mono text-[13px] text-[var(--cd-muted)]">
+            Vence en {formatTimer(secondsLeft)}
+          </div>
+        </div>
       </div>
     </aside>
   );
 }
 
-function Row({
+function CompareBlock() {
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="flex items-center gap-3 rounded-2xl bg-[var(--cd-danger-soft)] px-3.5 py-3">
+        <CameraOffIcon />
+        <div>
+          <b className="block text-[14px] font-medium text-[var(--cd-ink)]">
+            Cámara
+          </b>
+          <span className="text-[12px] text-[var(--cd-ink-2)]">No lo lee</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 rounded-2xl bg-[var(--cd-success-soft)] px-3.5 py-3">
+        <BankIcon />
+        <div>
+          <b className="block text-[14px] font-medium text-[var(--cd-ink)]">
+            App de tu banco
+          </b>
+          <span className="text-[12px] text-[var(--cd-ink-2)]">Así sí</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CameraOffIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6 shrink-0 text-[var(--cd-danger)]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M2 2l20 20" />
+      <path d="M7 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14" />
+      <path d="M17 17v-1" />
+      <path d="M9.5 4H15l2 3h2a2 2 0 0 1 2 2v3" />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
+  );
+}
+
+function BankIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6 shrink-0 text-[var(--cd-success)]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 10h18" />
+      <path d="M5 10v8" />
+      <path d="M9 10v8" />
+      <path d="M15 10v8" />
+      <path d="M19 10v8" />
+      <path d="M2 18h20" />
+      <path d="M12 3l9 7H3l9-7z" />
+    </svg>
+  );
+}
+
+function ReceiptRow({
   label,
   value,
   mono,
@@ -366,15 +574,8 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1.5">
-      <span className="codi-pay-secondary">{label}</span>
-      <span
-        className={[
-          "codi-pay-title font-medium",
-          mono ? "font-mono tracking-wide" : "",
-        ].join(" ")}
-      >
-        {value}
-      </span>
+      <span className="text-[var(--cd-muted)]">{label}</span>
+      <span className={mono ? "font-mono" : "font-medium"}>{value}</span>
     </div>
   );
 }
@@ -387,8 +588,8 @@ function QrFallback({ payload }: { payload: string }) {
       const dataUrl = await QRCode.toDataURL(payload, {
         errorCorrectionLevel: "M",
         margin: 1,
-        width: 280,
-        color: { dark: "#0B0F14", light: "#ffffff" },
+        width: 284,
+        color: { dark: "#0A0A0B", light: "#ffffff" },
       });
       if (!cancelled) setSrc(dataUrl);
     });
@@ -399,12 +600,12 @@ function QrFallback({ payload }: { payload: string }) {
 
   if (!src) {
     return (
-      <div className="flex h-56 w-56 items-center justify-center rounded-2xl bg-zinc-100 text-sm text-zinc-500">
+      <div className="flex h-[284px] w-[284px] items-center justify-center bg-[var(--cd-surface)] text-sm text-[var(--cd-muted)]">
         Preparando QR…
       </div>
     );
   }
 
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="Código QR CoDi" className="h-56 w-56 rounded-2xl" />;
+  return <img src={src} alt="Código QR CoDi" className="h-[284px] w-[284px]" />;
 }

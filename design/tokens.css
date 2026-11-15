@@ -1,0 +1,83 @@
+/* codidooh design system · tokens v0.1 */
+
+:root {
+  /* Type — Geist loaded via next/font in app/layout.tsx */
+  --cd-font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --cd-font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Neutrals */
+  --cd-ink: #0A0A0B;
+  --cd-ink-2: #3A3A40;
+  --cd-muted: #6B6B73;
+  --cd-subtle: #A1A1A8;
+  --cd-line: #E6E6E9;
+  --cd-surface: #F4F4F5;
+  --cd-bg: #FFFFFF;
+  --cd-night: #0A0A0B;
+  --cd-night-muted: #A1A1A8;
+
+  /* Acento único */
+  --cd-accent: #2B50FF;
+  --cd-accent-soft: #EBEFFF;
+
+  /* Estados */
+  --cd-success: #0F8F45;
+  --cd-success-soft: #E5F5EB;
+  --cd-danger: #D12F35;
+  --cd-danger-soft: #FCEBEB;
+
+  /* Escala tipográfica (tablet 1280×800) */
+  --cd-amount: 64px;
+  --cd-title: 30px;
+  --cd-headline: 20px;
+  --cd-body: 15px;
+  --cd-small: 13px;
+  --cd-label: 12px;
+
+  /* Espacio y forma */
+  --cd-space-1: 4px;
+  --cd-space-2: 8px;
+  --cd-space-3: 12px;
+  --cd-space-4: 16px;
+  --cd-space-5: 24px;
+  --cd-space-6: 32px;
+  --cd-space-7: 40px;
+  --cd-space-8: 56px;
+  --cd-radius-sm: 10px;
+  --cd-radius-md: 16px;
+  --cd-radius-lg: 24px;
+  --cd-radius-pill: 999px;
+  --cd-panel-w: 420px;
+  --cd-touch: 56px;
+  --cd-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes cdPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(43, 80, 255, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(43, 80, 255, 0);
+  }
+}
+
+@keyframes cdBar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes cdSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
+}

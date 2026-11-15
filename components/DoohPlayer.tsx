@@ -10,10 +10,8 @@ interface DoohPlayerProps {
 }
 
 /**
- * Real video DOOH surface.
- * Playlist always runs (bathroom, parking idle, laundry idle) — ads monetize
- * screen time even before a payment session starts.
- * Uses object-contain so 16:9 bumpers are not cropped on the sides.
+ * DOOH surface — videos fill the entire left column (object-cover).
+ * Playlist always runs so ads monetize idle + checkout time.
  */
 export function DoohPlayer(_props: DoohPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -28,7 +26,6 @@ export function DoohPlayer(_props: DoohPlayerProps) {
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !creative) return;
-
     el.muted = true;
     el.defaultMuted = true;
     el.playsInline = true;
@@ -59,7 +56,7 @@ export function DoohPlayer(_props: DoohPlayerProps) {
         <video
           key={creative.id}
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-contain bg-black"
+          className="absolute inset-0 h-full w-full object-cover bg-black"
           src={creative.src}
           muted
           playsInline
@@ -69,11 +66,11 @@ export function DoohPlayer(_props: DoohPlayerProps) {
         />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 px-8 text-center">
-          <p className="text-[13px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-            DOOH
+          <p className="font-mono text-[13px] tracking-[0.08em] text-zinc-500">
+            ANUNCIO PROGRAMÁTICO · DV360
           </p>
           <p className="mt-3 max-w-md text-[18px] font-medium text-zinc-200">
-            No hay creatividades cargadas
+            Sin creatividades locales — el hueco se llena con programática
           </p>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { touchMachine } from "@/lib/machines";
 import { markPending } from "@/lib/payment-store";
 import { createCodiQr, PeyApiError } from "@/lib/pey";
 import {
@@ -13,11 +14,13 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as {
       useCaseId?: UseCaseId;
+      machineId?: string;
     };
 
     const useCase = getUseCase(body.useCaseId ?? "parking");
     const concept = buildConcept(useCase);
     const numRef = buildNumRef();
+    const machineId = body.machineId || useCase.id;
 
     const peyQr = await createCodiQr({
       amount: HACKATHON_AMOUNT_MXN,
@@ -29,10 +32,16 @@ export async function POST(request: Request) {
         product: "codi-dooh",
         useCase: useCase.id,
         ticket: useCase.ticketLabel,
+        machineId,
       },
     });
 
-    markPending(peyQr.id);
+    markPending(peyQr.id, {
+      machineId,
+      concept,
+      amount: HACKATHON_AMOUNT_MXN,
+    });
+    touchMachine(machineId, "online");
 
     const payload: CreateQrResponse = {
       qrId: peyQr.id,

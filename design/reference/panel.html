@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>codidooh · Panel de pago CoDi (referencia)</title>
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #E9E9EC; font-family: var(--cd-font-sans); color: var(--cd-ink); -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 24px; font-size: 13px; }
+  .controls a { padding: 6px 12px; border-radius: 99px; background: #fff; color: var(--cd-ink); text-decoration: none; border: 1px solid var(--cd-line); cursor: pointer; }
+  .controls a.on { background: var(--cd-ink); color: #fff; }
+  .tablet { width: 1280px; height: 800px; margin: 8px 24px 48px; background: #0A0A0B; border-radius: 40px; padding: 16px; box-sizing: content-box; }
+  .screen { width: 100%; height: 100%; border-radius: 26px; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr) var(--cd-panel-w); }
+  .ad { background: #000; display: grid; place-items: center; }
+  .ad-slot { width: 100%; height: 100%; background: #141416; display: grid; place-items: center; font-family: var(--cd-font-mono); font-size: 13px; letter-spacing: .08em; color: #6B6B73; }
+
+  .panel { background: var(--cd-bg); height: 100%; display: flex; flex-direction: column; }
+  .pad { flex: 1; display: flex; flex-direction: column; padding: 32px 40px 0; }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .brand img { width: 64px; height: 64px; border-radius: 16px; display: block; background: var(--cd-surface); }
+  .brand-title { font-size: 24px; font-weight: 500; letter-spacing: -.015em; }
+  .brand-sub { font-size: 13px; color: var(--cd-muted); }
+  .amount-row { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--cd-line); display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .concept { font-size: var(--cd-small); color: var(--cd-muted); }
+  .amount { font-size: 44px; font-weight: 500; letter-spacing: -.035em; line-height: 1; }
+  .mxn { font-family: var(--cd-font-mono); font-size: 12px; color: var(--cd-muted); margin-left: 6px; }
+  .qr-card { margin-top: 18px; border: 1px solid var(--cd-line); border-radius: var(--cd-radius-lg); padding: 16px; display: flex; justify-content: center; }
+  .qr-card svg { width: 284px; height: 284px; display: block; }
+  .compare { margin-top: 12px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  .cmp { border-radius: var(--cd-radius-md); padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+  .cmp.no { background: var(--cd-danger-soft); } .cmp.yes { background: var(--cd-success-soft); }
+  .cmp b { display: block; font-size: 14px; font-weight: 500; } .cmp span { font-size: 12px; color: var(--cd-ink-2); }
+  .steps { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; font-size: var(--cd-small); color: var(--cd-ink-2); }
+  .steps i { font-style: normal; color: var(--cd-subtle); } .steps strong { font-weight: 500; color: var(--cd-ink); }
+  .grow { flex: 1; }
+  .footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--cd-line); padding: 16px 0 20px; }
+  .live { display: flex; align-items: center; gap: 10px; font-size: var(--cd-small); font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--cd-accent); animation: cdPulse 1.8s ease-out infinite; }
+  .timer { font-family: var(--cd-font-mono); font-size: var(--cd-small); color: var(--cd-muted); }
+
+  .result { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 40px; text-align: center; }
+  .badge { width: 88px; height: 88px; border-radius: 99px; display: grid; place-items: center; }
+  .badge.ok { background: var(--cd-success-soft); } .badge.bad { background: var(--cd-danger-soft); }
+  .badge.neutral { background: var(--cd-surface); } .badge.live { background: var(--cd-accent-soft); }
+  .spinner { width: 36px; height: 36px; border-radius: 99px; border: 3px solid rgba(43,80,255,.2); border-top-color: var(--cd-accent); animation: cdSpin .9s linear infinite; }
+  .r-title { margin-top: 28px; font-size: var(--cd-title); font-weight: 500; letter-spacing: -.02em; }
+  .r-note { margin-top: 8px; font-size: var(--cd-headline); color: var(--cd-ink-2); }
+  .r-desc { margin-top: 10px; font-size: var(--cd-body); color: var(--cd-muted); line-height: 1.5; }
+  .receipt { margin-top: 36px; width: 100%; background: var(--cd-surface); border-radius: var(--cd-radius-md); padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; text-align: left; font-size: var(--cd-small); }
+  .receipt div { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .receipt span:first-child { color: var(--cd-muted); } .receipt .mono { font-family: var(--cd-font-mono); }
+  .return { width: 100%; padding: 0 40px 28px; }
+  .bar { height: 3px; border-radius: 99px; background: var(--cd-line); overflow: hidden; }
+  .bar > div { height: 100%; transform-origin: left; animation: cdBar 8s linear forwards; background: var(--cd-success); }
+  .bar.bad > div { background: var(--cd-ink); }
+</style>
+</head>
+<body>
+<nav class="controls" id="controls"></nav>
+<div class="tablet"><div class="screen">
+  <div class="ad"><div class="ad-slot">ANUNCIO PROGRAMÁTICO · FULL BLEED</div></div>
+  <div class="panel" id="panel"></div>
+</div></div>
+<script>
+const states = ['esperando','confirmando','recibido','rechazado','vencido','no-disponible'];
+let current = 'esperando';
+const logo = '../../public/brand/codi-logo.png';
+const qrSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><rect x="8" y="8" width="28" height="28" fill="#0A0A0B"/><rect x="64" y="8" width="28" height="28" fill="#0A0A0B"/><rect x="8" y="64" width="28" height="28" fill="#0A0A0B"/><rect x="40" y="40" width="20" height="20" fill="#0A0A0B"/><rect x="64" y="64" width="12" height="12" fill="#0A0A0B"/><rect x="80" y="80" width="12" height="12" fill="#0A0A0B"/></svg>`;
+
+function cmp() {
+  return `<div class="compare">
+    <div class="cmp no"><div><b>Cámara</b><span>No lo lee</span></div></div>
+    <div class="cmp yes"><div><b>App de tu banco</b><span>Así sí</span></div></div>
+  </div>
+  <div class="steps">Abre tu banco <i>›</i> Transferir <i>›</i> <strong>QR CoDi</strong> <i>›</i> Confirma</div>`;
+}
+
+function render() {
+  document.querySelectorAll('.controls a').forEach(a => a.classList.toggle('on', a.dataset.s === current));
+  const p = document.getElementById('panel');
+  if (current === 'esperando') {
+    p.innerHTML = `<div class="pad">
+      <div class="brand"><img src="${logo}" alt="CoDi"><div><div class="brand-title">Paga con CoDi</div><div class="brand-sub">Sistema del Banco de México</div></div></div>
+      <div class="amount-row"><span class="concept">Acceso al baño</span><div><span class="amount">$0.01</span><span class="mxn">MXN</span></div></div>
+      <div class="qr-card">${qrSvg}</div>
+      ${cmp()}
+      <div class="grow"></div>
+      <div class="footer"><div class="live"><span class="dot"></span>Esperando pago</div><div class="timer">Vence en 4:59</div></div>
+    </div>`;
+  } else if (current === 'confirmando') {
+    p.innerHTML = `<div class="result"><div class="badge live"><div class="spinner"></div></div><div class="r-title">Confirmando pago</div><div class="r-note">$0.01 MXN</div></div>`;
+  } else if (current === 'recibido') {
+    p.innerHTML = `<div class="result" style="justify-content:flex-start;padding-top:80px">
+      <div class="badge ok">✓</div>
+      <div class="r-title">Pago recibido</div>
+      <div class="r-note">Ya puedes pasar</div>
+      <div class="receipt">
+        <div><span>Concepto</span><span>Acceso al baño · $0.01</span></div>
+        <div><span>Método</span><span>CoDi</span></div>
+        <div><span>Referencia</span><span class="mono">AB12CD34</span></div>
+        <div><span>Hora</span><span class="mono">18:20</span></div>
+      </div>
+    </div><div class="return"><div class="bar"><div></div></div></div>`;
+  } else if (current === 'rechazado') {
+    p.innerHTML = `<div class="result"><div class="badge bad">✕</div><div class="r-title">No se completó el pago</div><div class="r-desc">Tu banco no confirmó la transferencia.</div></div><div class="return"><div class="bar bad"><div></div></div></div>`;
+  } else if (current === 'vencido') {
+    p.innerHTML = `<div class="result"><div class="badge neutral">◷</div><div class="r-title">El código venció</div><div class="r-desc">Generando uno nuevo</div></div>`;
+  } else {
+    p.innerHTML = `<div class="result"><div class="badge neutral">⊘</div><div class="r-title">CoDi no está disponible por ahora</div><div class="r-desc">Usa otro método de pago.</div></div>`;
+  }
+}
+
+const nav = document.getElementById('controls');
+states.forEach(s => {
+  const a = document.createElement('a');
+  a.textContent = s;
+  a.dataset.s = s;
+  a.onclick = () => { current = s; render(); };
+  nav.appendChild(a);
+});
+render();
+</script>
+</body>
+</html>

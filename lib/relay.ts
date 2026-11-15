@@ -4,8 +4,8 @@
  * V1: records pulses in-memory and optionally forwards to a local bridge
  * (Raspberry Pi GPIO agent or ESP32) via RELAY_BRIDGE_URL.
  *
- * Production path: payment confirmed → POST /api/relay/pulse → bridge closes
- * NO/COM for N milliseconds → door/turnstile opens. Cash hardware stays parallel.
+ * Poll mode: ESP32 GET /api/relay/events → consumes pending pulse.
+ * Push mode: RELAY_BRIDGE_URL/pulse on payment.
  */
 
 export type RelayPulseResult = {
@@ -24,8 +24,15 @@ export type RelayEvent = {
   mode: "simulated" | "bridge";
 };
 
+export type PendingPulse = {
+  durationMs: number;
+  reason: string;
+  at: number;
+} | null;
+
 const globalRelay = globalThis as typeof globalThis & {
   __codiDoohRelayLog?: RelayEvent[];
+  __codiDoohRelayPending?: PendingPulse;
 };
 
 function log(): RelayEvent[] {
@@ -39,6 +46,21 @@ export function getRecentRelayEvents(limit = 20): RelayEvent[] {
   return log().slice(-limit).reverse();
 }
 
+/** ESP32 poll: return and clear one pending pulse. */
+export function consumePendingPulse(): PendingPulse {
+  const pending = globalRelay.__codiDoohRelayPending ?? null;
+  globalRelay.__codiDoohRelayPending = null;
+  return pending;
+}
+
+function enqueuePending(durationMs: number, reason: string) {
+  globalRelay.__codiDoohRelayPending = {
+    durationMs,
+    reason,
+    at: Date.now(),
+  };
+}
+
 export async function pulseRelay(options?: {
   durationMs?: number;
   reason?: string;
@@ -49,6 +71,9 @@ export async function pulseRelay(options?: {
   );
   const reason = options?.reason ?? "payment_confirmed";
   const bridgeUrl = process.env.RELAY_BRIDGE_URL?.replace(/\/$/, "");
+
+  // Always queue for ESP32 poll clients.
+  enqueuePending(durationMs, reason);
 
   if (bridgeUrl) {
     const res = await fetch(`${bridgeUrl}/pulse`, {
@@ -80,7 +105,6 @@ export async function pulseRelay(options?: {
     };
   }
 
-  // Desk / cloud MVP without hardware attached yet.
   const event: RelayEvent = {
     at: Date.now(),
     durationMs,
@@ -89,7 +113,7 @@ export async function pulseRelay(options?: {
   };
   log().push(event);
   console.info(
-    `[relay] SIMULATED pulse ${durationMs}ms — ${reason} (set RELAY_BRIDGE_URL to hit real hardware)`,
+    `[relay] SIMULATED pulse ${durationMs}ms — ${reason} (ESP32 can poll /api/relay/events; or set RELAY_BRIDGE_URL)`,
   );
 
   return {

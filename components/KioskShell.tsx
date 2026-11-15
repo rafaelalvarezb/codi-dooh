@@ -12,9 +12,9 @@ import { resolveProfile, type KioskProfileId } from "@/lib/kiosk-profile";
  *   /?profile=parking
  *   /?profile=laundry
  *   /?profile=parking&session=1
+ *   /?profile=bathroom&demo=1  (shows profile switcher)
  *
- * On desktop, the shell is framed like a ~10" landscape tablet (16:10)
- * so DOOH creatives preview closer to the real device.
+ * Layout SPEC: minmax(0,1fr) 420px — DOOH full-bleed left, CoDi panel right.
  */
 export function KioskShell() {
   const searchParams = useSearchParams();
@@ -23,6 +23,7 @@ export function KioskShell() {
     [searchParams],
   );
   const sessionFromSignal = searchParams.get("session") === "1";
+  const showDemoHints = searchParams.get("demo") === "1";
 
   const [sessionActive, setSessionActive] = useState(
     profile.billingMode === "fixed" || sessionFromSignal,
@@ -34,11 +35,11 @@ export function KioskShell() {
 
   return (
     <div
-      className="flex h-dvh max-h-dvh w-full items-center justify-center overflow-hidden bg-zinc-300 p-3 sm:p-6"
+      className="flex h-dvh max-h-dvh w-full items-center justify-center overflow-hidden bg-[#E9E9EC] p-3 sm:p-6"
       style={{ colorScheme: "light" }}
     >
-      <div className="relative flex h-full w-full max-h-[720px] max-w-[1152px] flex-col overflow-hidden rounded-[28px] border border-zinc-400/40 bg-zinc-100 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-        <main className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[7fr_3fr]">
+      <div className="relative flex h-full w-full max-h-[800px] max-w-[1280px] flex-col overflow-hidden rounded-[26px] bg-[var(--cd-night)] shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:rounded-[40px] sm:p-4">
+        <main className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden rounded-[26px] md:grid-cols-[minmax(0,1fr)_420px]">
           <DoohPlayer
             billingMode={profile.billingMode}
             sessionActive={sessionActive}
@@ -46,6 +47,7 @@ export function KioskShell() {
           <CodiPanel
             profile={profile}
             sessionActive={sessionActive}
+            machineId={profile.id}
             onEndSession={
               profile.billingMode === "dynamic"
                 ? () => setSessionActive(false)
@@ -54,7 +56,7 @@ export function KioskShell() {
           />
         </main>
 
-        <DemoProfileHints active={profile.id} />
+        {showDemoHints ? <DemoProfileHints active={profile.id} /> : null}
       </div>
     </div>
   );
@@ -72,7 +74,7 @@ function DemoProfileHints({ active }: { active: KioskProfileId }) {
       ).map(([id, label]) => (
         <a
           key={id}
-          href={`/?profile=${id}`}
+          href={`/?profile=${id}&demo=1`}
           className={[
             "pointer-events-auto rounded-full border px-2.5 py-1 text-[10px] font-medium backdrop-blur",
             active === id

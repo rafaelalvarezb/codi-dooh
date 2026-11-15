@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
-import { getRecentRelayEvents } from "@/lib/relay";
+import { consumePendingPulse, getRecentRelayEvents } from "@/lib/relay";
 
+/**
+ * ESP32 poll endpoint.
+ * Returns pending:true once per queued pulse (consumed), plus recent log.
+ */
 export async function GET() {
-  return NextResponse.json({ events: getRecentRelayEvents() });
+  const pending = consumePendingPulse();
+  return NextResponse.json({
+    pending: Boolean(pending),
+    durationMs: pending?.durationMs ?? 0,
+    reason: pending?.reason ?? null,
+    at: pending?.at ?? null,
+    events: getRecentRelayEvents(),
+  });
 }

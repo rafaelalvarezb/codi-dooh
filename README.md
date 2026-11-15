@@ -1,65 +1,40 @@
 # CODI · DOOH
 
-Kiosco inteligente **Plug & Play** para microcobros con **CoDi** (vía [Pey](https://docs.pey.mx)) a **0% de comisión**, monetizado con publicidad **DOOH** programática (Revenue Share).
+Kiosco **CoDi + DOOH**: microcobros con transferencia QR (Pey) a **0% comisión**,
+pantalla de anuncios a full-bleed, y portal lean de operación.
 
-## Qué hace
+Live: https://codi-dooh.vercel.app · Portal: https://codi-dooh.vercel.app/portal
 
-- Pantalla kiosco a pantalla completa (sin scroll ni chrome web).
-- Panel DOOH (70%) con campañas rotativas por caso de uso.
-- Terminal CoDi (30%) que genera QR reales con la API de Pey (`POST /codi/qr`).
-- Confirmación de pago por polling a `GET /transaction/codi/qr/{id}` (+ webhook opcional).
-- Casos de uso: Estacionamiento · Lavandería / Recarga · Baños Públicos.
-- Monto de prueba hackathon: **$0.01 MXN**.
+## Qué incluye
 
-## Arranque local (pasos simples)
+- Kiosco SPEC (`design/`): panel CoDi 420px + DOOH `object-cover`.
+- Estados: esperando → confirmando → recibido (+ vencido / rechazado / no-disponible).
+- Perfiles: `/?profile=bathroom|parking|laundry` · hints con `&demo=1`.
+- Portal `/portal`: login, máquinas, transacciones, resumen día/semana.
+- Firmware scaffold: `firmware/esp32-relay` (poll `/api/relay/events`).
+- Ads roadmap: `docs/ads-roadmap.md` (manual → locales → DV360).
 
-1. Abre una terminal en esta carpeta del proyecto.
-2. Asegúrate de tener el archivo `.env.local` (ya está creado en tu máquina; no se sube a GitHub).
-3. Instala dependencias (solo la primera vez):
+## Arranque local
 
 ```bash
+cp .env.example .env.local   # pon tu PEY_API_KEY
 npm install
-```
-
-4. Levanta el kiosco:
-
-```bash
 npm run dev
 ```
 
-5. Abre en el navegador: [http://localhost:3000](http://localhost:3000)
+- Kiosco: http://localhost:3000  
+- Portal: http://localhost:3000/portal (admin@codidooh.mx / codidooh)
 
-6. Prueba el flujo:
-   - Cambia el caso de uso arriba a la derecha.
-   - Pulsa **Pagar con CoDi ($0.01 MXN)**.
-   - Escanea el QR con tu app bancaria (monto real de $0.01).
-   - Espera la confirmación SPEI y la animación de éxito / relé.
+## Design system
 
-## Variables de entorno
+Ver [`design/README.md`](design/README.md), [`design/SPEC.md`](design/SPEC.md) y
+la regla Cursor [`.cursor/rules/codidooh.mdc`](.cursor/rules/codidooh.mdc).
+Tokens: `design/tokens.css` (importados en `app/globals.css`).
 
-Copia `.env.example` → `.env.local` y coloca tu API key de Pey:
+## Hardware (cuando llegue el kit)
 
-```env
-PEY_API_KEY=sk_live_your_key_here
-PEY_API_BASE_URL=https://api.pey.mx
-```
+ESP32 + relé 5V (+ chapa 12V opcional). Guía: [`firmware/esp32-relay/README.md`](firmware/esp32-relay/README.md).
 
-Documentación oficial: https://docs.pey.mx
+## Variables
 
-## Arquitectura
-
-```
-app/                  # App Router + API routes
-  api/codi/
-    create-qr/        # POST → Pey /codi/qr
-    status/           # GET  → Pey /transaction/codi/qr/{id}
-    webhook/          # POST ← Pey codi.qr.payment_received
-components/           # UI del kiosco
-lib/                  # Cliente Pey tipado + casos de uso
-```
-
-## Seguridad
-
-- La API key **nunca** va en el código fuente.
-- `.gitignore` bloquea `.env`, `.env.*` y permite solo `.env.example`.
-- Las llamadas a Pey se hacen **solo en el servidor** (route handlers).
+Ver `.env.example` (`PEY_*`, `PORTAL_*`, `RELAY_BRIDGE_URL`).
