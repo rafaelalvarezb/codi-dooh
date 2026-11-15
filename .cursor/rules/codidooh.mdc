@@ -10,9 +10,11 @@ Antes de construir o modificar UI del panel de pago CoDi, lee:
 - design/reference/panel.html: implementación de referencia en HTML/CSS/JS puro. Replica su resultado visual.
 
 Reglas no negociables:
-- La única marca visible es CoDi (public/brand/codi-logo.png). Logo a 64px en el encabezado (72px en contraste). Nunca encima del QR.
+- La única marca visible es CoDi (public/brand/codi-logo.png). Logo a 72px en el bloque night (variante contraste). Nunca encima del QR.
 - El QR se muestra tal como lo entrega CoDi, sin logo, recortes ni recolor; mínimo 230px de lado.
-- El comparativo "Cámara: no lo lee / App de tu banco: así sí" siempre visible junto al QR.
+- Variante de producción: **contraste** (bloque night + QR). No uses el layout “comparativo” claro.
+- Comparativo compacto: primero "App del banco / Así sí", luego "Cámara / No".
+- Ruta: Abre tu banco › Transferir › Escanea › Confirma.
 - Copy en español de México, tuteo, frases cortas, sin signos de exclamación ni emoji. Usa el copy de SPEC.md al pie de la letra.
 - En errores, solo qué pasó; sin pasos a seguir.
 - Acento azul #2B50FF solo para el estado en vivo. Verde y rojo solo para resultados y el comparativo.

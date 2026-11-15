@@ -250,7 +250,10 @@ export function CodiPanel({
             {profile.standbyBody}
           </p>
           <div className="mt-auto pb-6">
-            <CompareBlock />
+            <p className="mb-3 text-[15px] font-medium text-[var(--cd-ink)]">
+              Solo con la app de tu banco
+            </p>
+            <ContrastCompare />
           </div>
         </div>
       </aside>
@@ -417,72 +420,67 @@ export function CodiPanel({
     );
   }
 
-  /* esperando */
+  /* esperando — variante contraste (producción) */
   return (
-    <aside className="cd-panel relative flex h-full min-h-0 flex-col border-l border-[var(--cd-line)]">
-      <div className="flex min-h-0 flex-1 flex-col px-10 pt-8">
-        <div className="flex items-center gap-4">
-          <Image
-            src="/brand/codi-logo.png"
-            alt="CoDi"
-            width={64}
-            height={64}
-            className="h-16 w-16 rounded-2xl object-cover"
-            priority
-          />
-          <div>
-            <p className="text-[24px] font-medium tracking-[-0.015em] text-[var(--cd-ink)]">
-              Paga con CoDi
-            </p>
-            <p className="text-[13px] text-[var(--cd-muted)]">
-              Sistema del Banco de México
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 flex items-baseline justify-between gap-3 border-t border-[var(--cd-line)] pt-[18px]">
-          <span className="text-[13px] text-[var(--cd-muted)]">
-            {profile.serviceTitle}
+    <aside className="cd-panel relative flex h-full min-h-0 flex-col overflow-hidden border-l border-[var(--cd-line)]">
+      <div className="flex shrink-0 flex-col items-center bg-[var(--cd-night)] px-8 pb-6 pt-7 text-center text-white">
+        <Image
+          src="/brand/codi-logo.png"
+          alt="CoDi"
+          width={72}
+          height={72}
+          className="h-[72px] w-[72px] rounded-2xl object-cover ring-1 ring-white/20"
+          priority
+        />
+        <p className="mt-4 text-[20px] font-medium tracking-[-0.015em]">
+          Paga con CoDi
+          <span className="font-normal text-[var(--cd-night-muted)]">
+            {" "}
+            · Banco de México
           </span>
-          <div>
-            <span className="text-[44px] font-medium leading-none tracking-[-0.035em] text-[var(--cd-ink)]">
-              {amountLabel}
-            </span>
-            <span className="ml-1.5 font-mono text-[12px] text-[var(--cd-muted)]">
-              MXN
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-[18px] flex justify-center rounded-3xl border border-[var(--cd-line)] p-4">
+        </p>
+        <p className="mt-3 text-[13px] text-[var(--cd-night-muted)]">
+          {profile.serviceTitle}
+        </p>
+        <p className="mt-1">
+          <span className="text-[48px] font-medium leading-none tracking-[-0.035em]">
+            {amountLabel}
+          </span>
+          <span className="ml-1.5 font-mono text-[12px] text-[var(--cd-night-muted)]">
+            MXN
+          </span>
+        </p>
+        <div className="mt-5 rounded-2xl bg-white p-3">
           {qr?.qrImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={`data:image/png;base64,${qr.qrImage}`}
               alt="Código QR CoDi"
-              className="h-[284px] w-[284px]"
+              className="h-[236px] w-[236px]"
             />
           ) : qr ? (
-            <QrFallback payload={qr.qrString} />
+            <QrFallback payload={qr.qrString} size={236} />
           ) : null}
         </div>
+      </div>
 
-        <CompareBlock />
-
-        <p className="mt-3.5 flex flex-wrap gap-1.5 text-[13px] text-[var(--cd-ink-2)]">
+      <div className="flex min-h-0 flex-1 flex-col bg-[var(--cd-bg)] px-8 pt-5">
+        <p className="text-[20px] font-medium tracking-[-0.015em] text-[var(--cd-ink)]">
+          Solo con la app de tu banco
+        </p>
+        <ContrastCompare />
+        <p className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[13px] text-[var(--cd-ink-2)]">
           <span>Abre tu banco</span>
           <span className="text-[var(--cd-subtle)]">›</span>
           <span>Transferir</span>
           <span className="text-[var(--cd-subtle)]">›</span>
-          <strong className="font-medium text-[var(--cd-ink)]">QR CoDi</strong>
+          <strong className="font-medium text-[var(--cd-ink)]">Escanea</strong>
           <span className="text-[var(--cd-subtle)]">›</span>
           <span>Confirma</span>
         </p>
-
         <div className="flex-1" />
-
         <div className="flex items-center justify-between border-t border-[var(--cd-line)] py-4 pb-5">
-          <div className="flex items-center gap-2.5 text-[13px] font-medium">
+          <div className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--cd-ink)]">
             <span className="h-2 w-2 animate-cd-pulse rounded-full bg-[var(--cd-accent)]" />
             Esperando pago
           </div>
@@ -495,25 +493,26 @@ export function CodiPanel({
   );
 }
 
-function CompareBlock() {
+/** Sí primero (banco), No después (cámara) — alineado al feedback de prueba. */
+function ContrastCompare() {
   return (
     <div className="mt-3 grid grid-cols-2 gap-2">
-      <div className="flex items-center gap-3 rounded-2xl bg-[var(--cd-danger-soft)] px-3.5 py-3">
-        <CameraOffIcon />
-        <div>
-          <b className="block text-[14px] font-medium text-[var(--cd-ink)]">
-            Cámara
-          </b>
-          <span className="text-[12px] text-[var(--cd-ink-2)]">No lo lee</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-3 rounded-2xl bg-[var(--cd-success-soft)] px-3.5 py-3">
+      <div className="flex items-center gap-2.5 rounded-2xl bg-[var(--cd-success-soft)] px-3 py-2.5">
         <BankIcon />
         <div>
-          <b className="block text-[14px] font-medium text-[var(--cd-ink)]">
-            App de tu banco
+          <b className="block text-[13px] font-medium text-[var(--cd-ink)]">
+            App del banco
           </b>
           <span className="text-[12px] text-[var(--cd-ink-2)]">Así sí</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2.5 rounded-2xl bg-[var(--cd-danger-soft)] px-3 py-2.5">
+        <CameraOffIcon />
+        <div>
+          <b className="block text-[13px] font-medium text-[var(--cd-ink)]">
+            Cámara
+          </b>
+          <span className="text-[12px] text-[var(--cd-ink-2)]">No</span>
         </div>
       </div>
     </div>
@@ -580,7 +579,13 @@ function ReceiptRow({
   );
 }
 
-function QrFallback({ payload }: { payload: string }) {
+function QrFallback({
+  payload,
+  size = 236,
+}: {
+  payload: string;
+  size?: number;
+}) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -588,7 +593,7 @@ function QrFallback({ payload }: { payload: string }) {
       const dataUrl = await QRCode.toDataURL(payload, {
         errorCorrectionLevel: "M",
         margin: 1,
-        width: 284,
+        width: size,
         color: { dark: "#0A0A0B", light: "#ffffff" },
       });
       if (!cancelled) setSrc(dataUrl);
@@ -596,16 +601,26 @@ function QrFallback({ payload }: { payload: string }) {
     return () => {
       cancelled = true;
     };
-  }, [payload]);
+  }, [payload, size]);
 
   if (!src) {
     return (
-      <div className="flex h-[284px] w-[284px] items-center justify-center bg-[var(--cd-surface)] text-sm text-[var(--cd-muted)]">
+      <div
+        className="flex items-center justify-center bg-[var(--cd-surface)] text-sm text-[var(--cd-muted)]"
+        style={{ width: size, height: size }}
+      >
         Preparando QR…
       </div>
     );
   }
 
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="Código QR CoDi" className="h-[284px] w-[284px]" />;
+  return (
+    <img
+      src={src}
+      alt="Código QR CoDi"
+      className="block"
+      style={{ width: size, height: size }}
+    />
+  );
 }

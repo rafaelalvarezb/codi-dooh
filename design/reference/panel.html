@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>codidooh · Panel de pago CoDi (referencia)</title>
+<title>codidooh · Panel CoDi contraste (referencia)</title>
 <link rel="stylesheet" href="../tokens.css">
 <style>
   * { box-sizing: border-box; }
@@ -16,22 +16,23 @@
   .ad { background: #000; display: grid; place-items: center; }
   .ad-slot { width: 100%; height: 100%; background: #141416; display: grid; place-items: center; font-family: var(--cd-font-mono); font-size: 13px; letter-spacing: .08em; color: #6B6B73; }
 
-  .panel { background: var(--cd-bg); height: 100%; display: flex; flex-direction: column; }
-  .pad { flex: 1; display: flex; flex-direction: column; padding: 32px 40px 0; }
-  .brand { display: flex; align-items: center; gap: 16px; }
-  .brand img { width: 64px; height: 64px; border-radius: 16px; display: block; background: var(--cd-surface); }
-  .brand-title { font-size: 24px; font-weight: 500; letter-spacing: -.015em; }
-  .brand-sub { font-size: 13px; color: var(--cd-muted); }
-  .amount-row { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--cd-line); display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .concept { font-size: var(--cd-small); color: var(--cd-muted); }
-  .amount { font-size: 44px; font-weight: 500; letter-spacing: -.035em; line-height: 1; }
-  .mxn { font-family: var(--cd-font-mono); font-size: 12px; color: var(--cd-muted); margin-left: 6px; }
-  .qr-card { margin-top: 18px; border: 1px solid var(--cd-line); border-radius: var(--cd-radius-lg); padding: 16px; display: flex; justify-content: center; }
-  .qr-card svg { width: 284px; height: 284px; display: block; }
+  .panel { background: var(--cd-bg); height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  .night { background: var(--cd-night); color: #fff; text-align: center; padding: 28px 32px 24px; display: flex; flex-direction: column; align-items: center; }
+  .night img { width: 72px; height: 72px; border-radius: 16px; display: block; box-shadow: 0 0 0 1px rgba(255,255,255,.22); }
+  .night-title { margin-top: 16px; font-size: 20px; font-weight: 500; letter-spacing: -.015em; }
+  .night-title span { font-weight: 400; color: var(--cd-night-muted); }
+  .night-concept { margin-top: 12px; font-size: 13px; color: var(--cd-night-muted); }
+  .night-amount { margin-top: 4px; font-size: 48px; font-weight: 500; letter-spacing: -.035em; line-height: 1; }
+  .night-amount .mxn { font-family: var(--cd-font-mono); font-size: 12px; color: var(--cd-night-muted); margin-left: 6px; }
+  .qr-card { margin-top: 20px; background: #fff; border-radius: 16px; padding: 12px; }
+  .qr-card svg { width: 236px; height: 236px; display: block; }
+
+  .white { flex: 1; display: flex; flex-direction: column; padding: 20px 32px 0; }
+  .hint { font-size: 20px; font-weight: 500; letter-spacing: -.015em; }
   .compare { margin-top: 12px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
-  .cmp { border-radius: var(--cd-radius-md); padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
-  .cmp.no { background: var(--cd-danger-soft); } .cmp.yes { background: var(--cd-success-soft); }
-  .cmp b { display: block; font-size: 14px; font-weight: 500; } .cmp span { font-size: 12px; color: var(--cd-ink-2); }
+  .cmp { border-radius: var(--cd-radius-md); padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .cmp.yes { background: var(--cd-success-soft); } .cmp.no { background: var(--cd-danger-soft); }
+  .cmp b { display: block; font-size: 13px; font-weight: 500; } .cmp span { font-size: 12px; color: var(--cd-ink-2); }
   .steps { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; font-size: var(--cd-small); color: var(--cd-ink-2); }
   .steps i { font-style: normal; color: var(--cd-subtle); } .steps strong { font-weight: 500; color: var(--cd-ink); }
   .grow { flex: 1; }
@@ -69,26 +70,28 @@ let current = 'esperando';
 const logo = '../../public/brand/codi-logo.png';
 const qrSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><rect x="8" y="8" width="28" height="28" fill="#0A0A0B"/><rect x="64" y="8" width="28" height="28" fill="#0A0A0B"/><rect x="8" y="64" width="28" height="28" fill="#0A0A0B"/><rect x="40" y="40" width="20" height="20" fill="#0A0A0B"/><rect x="64" y="64" width="12" height="12" fill="#0A0A0B"/><rect x="80" y="80" width="12" height="12" fill="#0A0A0B"/></svg>`;
 
-function cmp() {
-  return `<div class="compare">
-    <div class="cmp no"><div><b>Cámara</b><span>No lo lee</span></div></div>
-    <div class="cmp yes"><div><b>App de tu banco</b><span>Así sí</span></div></div>
-  </div>
-  <div class="steps">Abre tu banco <i>›</i> Transferir <i>›</i> <strong>QR CoDi</strong> <i>›</i> Confirma</div>`;
-}
-
 function render() {
   document.querySelectorAll('.controls a').forEach(a => a.classList.toggle('on', a.dataset.s === current));
   const p = document.getElementById('panel');
   if (current === 'esperando') {
-    p.innerHTML = `<div class="pad">
-      <div class="brand"><img src="${logo}" alt="CoDi"><div><div class="brand-title">Paga con CoDi</div><div class="brand-sub">Sistema del Banco de México</div></div></div>
-      <div class="amount-row"><span class="concept">Acceso al baño</span><div><span class="amount">$0.01</span><span class="mxn">MXN</span></div></div>
-      <div class="qr-card">${qrSvg}</div>
-      ${cmp()}
-      <div class="grow"></div>
-      <div class="footer"><div class="live"><span class="dot"></span>Esperando pago</div><div class="timer">Vence en 4:59</div></div>
-    </div>`;
+    p.innerHTML = `
+      <div class="night">
+        <img src="${logo}" alt="CoDi">
+        <div class="night-title">Paga con CoDi <span>· Banco de México</span></div>
+        <div class="night-concept">Acceso al baño</div>
+        <div class="night-amount">$0.01<span class="mxn">MXN</span></div>
+        <div class="qr-card">${qrSvg}</div>
+      </div>
+      <div class="white">
+        <div class="hint">Solo con la app de tu banco</div>
+        <div class="compare">
+          <div class="cmp yes"><div><b>App del banco</b><span>Así sí</span></div></div>
+          <div class="cmp no"><div><b>Cámara</b><span>No</span></div></div>
+        </div>
+        <div class="steps">Abre tu banco <i>›</i> Transferir <i>›</i> <strong>Escanea</strong> <i>›</i> Confirma</div>
+        <div class="grow"></div>
+        <div class="footer"><div class="live"><span class="dot"></span>Esperando pago</div><div class="timer">Vence en 4:59</div></div>
+      </div>`;
   } else if (current === 'confirmando') {
     p.innerHTML = `<div class="result"><div class="badge live"><div class="spinner"></div></div><div class="r-title">Confirmando pago</div><div class="r-note">$0.01 MXN</div></div>`;
   } else if (current === 'recibido') {

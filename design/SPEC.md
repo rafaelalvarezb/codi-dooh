@@ -23,20 +23,25 @@ La pantalla no tiene marca del lugar ni de codidooh: la única marca visible es 
 - El anuncio DOOH ocupa todo el área izquierda (`object-cover`), sin letterbox.
 
 ## Variantes del estado "esperando"
-### comparativo (PRINCIPAL)
-De arriba a abajo:
-1. **Marca**: logo CoDi 64×64 (radio 16) + "Paga con CoDi" (24/500) + "Sistema del Banco de México" (13, muted).
-2. **Monto**: hairline arriba. Concepto a la izquierda (13, muted). Monto a la derecha (44/500, tracking -0.035em, numerales tabulares) + "MXN" mono 12.
-3. **QR**: tarjeta con borde 1px `line`, radio 24, padding 16. QR a 284×284. **El QR se muestra tal como lo entrega CoDi. No poner logo encima ni recortarlo.**
-4. **Comparativo** (grid 2 columnas, gap 8):
-   - Rojo suave: icono cámara tachada (rojo) + "Cámara" / "No lo lee".
-   - Verde suave: icono banco (verde) + "App de tu banco" / "Así sí".
-5. **Ruta** (13): Abre tu banco › Transferir › **QR CoDi** › Confirma.
-6. **Footer** (hairline arriba): punto azul pulsante + "Esperando pago" · a la derecha "Vence en 4:59" (mono).
+### contraste (PRINCIPAL — producción)
+Validado en prueba con usuario: el QR + bloque negro se lee más rápido que el layout “comparativo” claro. Usar **solo** esta variante en el kiosco.
 
-### contraste (ALTERNATIVA)
-- Bloque negro arriba, centrado: logo 72×72 (contorno blanco 1px al 22%), "**Paga con CoDi** · Banco de México", concepto, monto 48px + MXN, QR 236px en tarjeta blanca.
-- Abajo en blanco: "Solo con la app de tu banco" (20/500), comparativo compacto ("Cámara: no" / "App del banco: sí"), ruta y footer de estado.
+De arriba a abajo:
+1. **Bloque night** (`--cd-night`), centrado, padding 28px 32px 24px:
+   - Logo CoDi 72×72, radio 16, contorno blanco 1px al 22%.
+   - "**Paga con CoDi**" (20/500, blanco) · "Banco de México" (13, night-muted) en la misma línea o debajo.
+   - Concepto (13, night-muted) + monto 48/500 blanco + "MXN" mono 12 muted.
+   - QR 236×236 en tarjeta blanca (radio 16, padding 12). Sin logo encima.
+2. **Zona blanca** abajo:
+   - Título: "Solo con la app de tu banco" (20/500).
+   - Comparativo compacto (grid 2 col, gap 8) — **primero el sí**:
+     - Verde suave: icono banco + "App del banco" / "Así sí".
+     - Rojo suave: icono cámara tachada + "Cámara" / "No".
+   - Ruta (13): Abre tu banco › Transferir › **Escanea** › Confirma.
+   - Footer: punto azul + "Esperando pago" · "Vence en m:ss".
+
+### comparativo (archivo / no producción)
+Layout claro completo con QR 284px. Conservado en `design/reference` solo como referencia histórica; **no** es el default del kiosco.
 
 ## Estados (máquina de estados)
 ```
