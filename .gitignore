@@ -50,8 +50,9 @@ next-env.d.ts
 Thumbs.db
 *.local
 
-# Local DOOH demo creatives (large / often third-party assets)
-/public/ads/*.mp4
+# Optional local-only oversized creatives (committed demo spots live in public/ads/)
+# /public/ads/*.mp4
 /public/ads/*.webm
 /public/ads/*.mov
 !/public/ads/.gitkeep
+!/public/ads/*.mp4

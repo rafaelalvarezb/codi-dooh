@@ -1,6 +1,6 @@
 /**
- * Local DOOH creatives for the kiosk demo.
- * Files live in /public/ads (kept local — not committed; often copyrighted demo assets).
+ * DOOH creatives for the kiosk.
+ * MP4s live in /public/ads and are committed so production can play them.
  */
 export type AdCreative = {
   id: string;
