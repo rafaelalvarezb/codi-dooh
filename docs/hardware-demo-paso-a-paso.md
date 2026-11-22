@@ -201,9 +201,13 @@ Guarda: **Cmd+S**.
 3. Si no sale nada: presiona el botón **EN** del ESP32 una vez (reset).  
 4. Debes ver algo como:
    - `WiFi.....`  
-   - luego una IP: `192.168.x.x`  
+   - `IP 192.168.x.x`  
+   - `Polling relay events...`  
 
-Cuando veas la IP, la Parte B terminó. Avísale a Cursor / sigue a Parte C.
+**Si ves `HTTP -1` en bucle:** el WiFi sí conectó, pero falló HTTPS.  
+Usa el `bridge.ino` actual del repo (incluye `WiFiClientSecure` + `setInsecure()`), vuelve a pegar el código (con tu WiFi), Upload otra vez, y pulsa **EN**.
+
+Cuando veas la IP y ya **no** salga `HTTP -1` cada segundo, Parte B lista → Parte C.
 
 ---
 
