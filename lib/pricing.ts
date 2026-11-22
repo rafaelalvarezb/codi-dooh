@@ -25,6 +25,17 @@ export function campaignMarketValueCents(input: {
   return Math.round((spots * input.spotPriceCents * days) / MONTH_DAYS);
 }
 
+/**
+ * Share of the booking already run, prorated by elapsed time (0 before the
+ * start, the full value after the end). Used for cost per play "to date".
+ */
+export function accruedCents(totalCents: number, startsAt: Date, endsAt: Date, now: Date): number {
+  const span = endsAt.getTime() - startsAt.getTime();
+  if (span <= 0) return totalCents;
+  const elapsed = Math.min(span, Math.max(0, now.getTime() - startsAt.getTime()));
+  return Math.round((totalCents * elapsed) / span);
+}
+
 /** What the advertiser owes: pilots and house ads are $0. */
 export function billedCents(billing: BillingKind, marketValueCents: number): number {
   return billing === "paid" ? marketValueCents : 0;
