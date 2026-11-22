@@ -75,14 +75,15 @@ void pulse(unsigned long durationMs) {
 
 void loop() {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi lost, reconnecting...");
-    WiFi.reconnect();
-    delay(1000);
+    Serial.println("WiFi lost, waiting...");
+    delay(2000);
     return;
   }
 
+  Serial.println("GET...");
   HTTPClient http;
   http.setTimeout(8000);
+  http.setReuse(false);
 
   WiFiClientSecure secure;
   WiFiClient plain;
@@ -101,6 +102,7 @@ void loop() {
   }
 
   int code = http.GET();
+  Serial.printf("HTTP %d\n", code);
   if (code == 200) {
     String body = http.getString();
     JsonDocument doc;
@@ -117,8 +119,6 @@ void loop() {
     } else {
       Serial.println("JSON parse error");
     }
-  } else {
-    Serial.printf("HTTP %d\n", code);
   }
   http.end();
   delay(POLL_MS);
