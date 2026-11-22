@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./drizzle/**/*"],
   },
+  async redirects() {
+    return [
+      { source: "/portal", destination: "/admin", permanent: false },
+      { source: "/portal/login", destination: "/entrar", permanent: false },
+    ];
+  },
   turbopack: {
     // A stray package-lock.json in the home folder confuses root detection.
     root: process.cwd(),
