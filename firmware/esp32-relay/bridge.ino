@@ -1,12 +1,17 @@
 /*
  * CODI-DOOH ESP32 relay bridge
- * Polls /api/relay/events over HTTPS and pulses GPIO when unlock is queued.
+ * Polls /api/relay/events and pulses GPIO when unlock is queued.
+ *
+ * For mesa demo: use http://<MAC_LAN_IP>:3000/api/relay/events
+ * (npm run dev:lan on the Mac). Vercel https URL needs a shared store
+ * (Upstash) or the ESP32 may miss pulses across serverless instances.
  *
  * Board: ESP32 DevKit (ELEGOO)
  * Relay IN1 -> GPIO 26 (active LOW on many modules — flip RELAY_ON if needed)
  */
 
 #include <WiFi.h>
+#include <WiFiClient.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -14,6 +19,8 @@
 const char* WIFI_SSID = "YOUR_WIFI";
 const char* WIFI_PASS = "YOUR_PASSWORD";
 
+// Mesa: http://192.168.x.x:3000/api/relay/events  (IP of your Mac)
+// Prod with Upstash: https://codi-dooh.vercel.app/api/relay/events
 const char* POLL_URL = "https://codi-dooh.vercel.app/api/relay/events";
 
 const int RELAY_PIN = 26;
@@ -21,6 +28,10 @@ const bool RELAY_ON = LOW;   // many 5V modules are active-low
 const bool RELAY_OFF = HIGH;
 
 const unsigned long POLL_MS = 1500;
+
+bool pollUrlIsHttps() {
+  return strncmp(POLL_URL, "https://", 8) == 0;
+}
 
 void setup() {
   Serial.begin(115200);
@@ -52,7 +63,8 @@ void setup() {
   Serial.println();
   Serial.print("IP ");
   Serial.println(WiFi.localIP());
-  Serial.println("Polling relay events...");
+  Serial.print("Polling ");
+  Serial.println(POLL_URL);
 }
 
 void pulse(unsigned long durationMs) {
@@ -69,12 +81,20 @@ void loop() {
     return;
   }
 
-  WiFiClientSecure client;
-  client.setInsecure(); // demo: skip cert verify (OK for hackathon/mesa)
-
   HTTPClient http;
   http.setTimeout(8000);
-  if (!http.begin(client, POLL_URL)) {
+
+  WiFiClientSecure secure;
+  WiFiClient plain;
+  bool began = false;
+  if (pollUrlIsHttps()) {
+    secure.setInsecure(); // demo: skip cert verify (OK for hackathon/mesa)
+    began = http.begin(secure, POLL_URL);
+  } else {
+    began = http.begin(plain, POLL_URL);
+  }
+
+  if (!began) {
     Serial.println("HTTP begin failed");
     delay(POLL_MS);
     return;
@@ -87,6 +107,7 @@ void loop() {
     DeserializationError err = deserializeJson(doc, body);
     if (!err) {
       bool pending = doc["pending"] | false;
+      Serial.printf("poll ok pending=%d\n", pending ? 1 : 0);
       if (pending) {
         unsigned long ms = doc["durationMs"] | 3000;
         Serial.printf("Pulse %lums reason=%s\n", ms,

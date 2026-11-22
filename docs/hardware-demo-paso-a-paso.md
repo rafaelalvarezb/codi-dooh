@@ -211,21 +211,56 @@ Cuando veas la IP y ya **no** salga `HTTP -1` cada segundo, Parte B lista → Pa
 
 ---
 
-## Parte C — Probar el “clic” sin chapa
+## Parte C — Probar el “clic” sin chapa (en tu Mac, misma WiFi)
 
-1. En el Mac, abre Terminal y pega:
+**Importante:** el `curl` a `codi-dooh.vercel.app` puede responder `ok:true` pero el ESP32 **no oye el clic**, porque Vercel tiene varios servidores y la cola del relé vive en memoria de uno solo.  
+Para la demo en mesa usamos el proyecto **en tu Mac** (misma red que el ESP32).
+
+### C1. Arranca el servidor en el Mac
+1. Abre Terminal.  
+2. Ve a la carpeta del proyecto (ajusta si tu ruta es otra):
 
 ```bash
-curl -X POST https://codi-dooh.vercel.app/api/relay/pulse \
+cd ~/Projects/codi-dooh
+git pull
+npm install
+npm run dev:lan
+```
+
+3. Déjalo corriendo. Debe decir algo como `Local: http://localhost:3000` (escucha en toda la red local).
+
+### C2. Averigua la IP de tu Mac (en otra pestaña de Terminal)
+
+```bash
+ipconfig getifaddr en0
+```
+
+Ejemplo de respuesta: `192.168.100.5`  
+(Si sale vacío, prueba `en1`.)
+
+### C3. Cambia solo esta línea en el sketch y vuelve a Upload
+En Arduino, deja tu WiFi igual, pero cambia `POLL_URL` a **http** (no https) con la IP de tu Mac:
+
+```cpp
+const char* POLL_URL = "http://192.168.100.5:3000/api/relay/events";
+```
+
+(Usa **tu** IP, no la del ejemplo.)  
+Upload → pulsa **EN** → Serial debe mostrar `IP ...` y luego líneas `poll ok pending=0`.
+
+### C4. Dispara el pulse (misma IP del Mac)
+
+```bash
+curl -X POST http://192.168.100.5:3000/api/relay/pulse \
   -H 'Content-Type: application/json' \
   -d '{"durationMs":3000,"reason":"test-mesa"}'
 ```
 
-2. En ~1–2 segundos el relé debe hacer **clic** ~3 segundos y otro clic al soltar.
+En 1–3 s:
+- Serial: `poll ok pending=1` y `Pulse 3000ms reason=test-mesa`
+- Relé: **clic**
 
-- Si **no** hace clic: en `bridge.ino` cambia  
-  `RELAY_ON` a `HIGH` y `RELAY_OFF` a `LOW`, vuelve a Upload, repite el curl.
-- Si hace clic: sigue a la Parte D.
+Si no hay clic pero sí sale `Pulse...`: en el sketch cambia `RELAY_ON` a `HIGH` y `RELAY_OFF` a `LOW`, Upload otra vez.
 
 ---
 
