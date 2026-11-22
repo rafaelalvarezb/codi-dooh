@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
 import { PASSWORD_MIN } from "@/lib/auth/password-policy";
@@ -12,9 +12,10 @@ const KINDS: Array<{ id: Kind; title: string; body: string }> = [
   { id: "host", title: "Tengo un negocio", body: "Instala pantallas y gana por anuncios." },
 ];
 
-export function RegisterForm({ initialKind }: { initialKind: Kind }) {
+export function RegisterForm() {
   const router = useRouter();
-  const [kind, setKind] = useState<Kind>(initialKind);
+  const searchParams = useSearchParams();
+  const [kind, setKind] = useState<Kind>(searchParams.get("tipo") === "host" ? "host" : "advertiser");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -68,8 +69,8 @@ export function RegisterForm({ initialKind }: { initialKind: Kind }) {
                   : "border-[var(--cd-line)] bg-[var(--cd-surface)] hover:bg-[var(--cd-bg)]",
               ].join(" ")}
             >
-              <span className="block text-[var(--cd-body)] font-medium">{k.title}</span>
-              <span className="mt-1 block text-[var(--cd-small)] text-[var(--cd-muted)]">{k.body}</span>
+              <span className="block text-[length:var(--cd-body)] font-medium">{k.title}</span>
+              <span className="mt-1 block text-[length:var(--cd-small)] text-[var(--cd-muted)]">{k.body}</span>
             </button>
           );
         })}

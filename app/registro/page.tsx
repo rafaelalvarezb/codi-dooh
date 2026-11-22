@@ -6,7 +6,7 @@ import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export const metadata: Metadata = { title: "Crear cuenta · CODI·DOOH" };
 
-export default function RegisterPage({ searchParams }: PageProps<"/registro">) {
+export default function RegisterPage() {
   return (
     <AuthFrame
       title="Crea tu cuenta"
@@ -20,14 +20,9 @@ export default function RegisterPage({ searchParams }: PageProps<"/registro">) {
         </>
       }
     >
-      <Suspense fallback={<RegisterForm initialKind="advertiser" />}>
-        <RegisterFormFromParams searchParams={searchParams} />
+      <Suspense fallback={<div className="h-[520px]" aria-busy="true" />}>
+        <RegisterForm />
       </Suspense>
     </AuthFrame>
   );
-}
-
-async function RegisterFormFromParams({ searchParams }: Pick<PageProps<"/registro">, "searchParams">) {
-  const tipo = (await searchParams).tipo;
-  return <RegisterForm initialKind={tipo === "host" ? "host" : "advertiser"} />;
 }

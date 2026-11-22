@@ -14,12 +14,12 @@ export function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[var(--cd-label)] font-medium text-[var(--cd-ink-2)]">{label}</span>
+      <span className="text-[length:var(--cd-label)] font-medium text-[var(--cd-ink-2)]">{label}</span>
       {children}
       {error ? (
-        <span className="text-[var(--cd-small)] text-[var(--cd-danger)]">{error}</span>
+        <span className="text-[length:var(--cd-small)] text-[var(--cd-danger)]">{error}</span>
       ) : hint ? (
-        <span className="text-[var(--cd-small)] text-[var(--cd-muted)]">{hint}</span>
+        <span className="text-[length:var(--cd-small)] text-[var(--cd-muted)]">{hint}</span>
       ) : null}
     </label>
   );
@@ -31,7 +31,7 @@ export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
       {...props}
       className={[
         "h-12 rounded-[var(--cd-radius-sm)] border border-[var(--cd-line)] bg-[var(--cd-bg)] px-4",
-        "text-[var(--cd-body)] text-[var(--cd-ink)] outline-none transition-colors",
+        "text-[length:var(--cd-body)] text-[var(--cd-ink)] outline-none transition-colors",
         "placeholder:text-[var(--cd-subtle)] focus:border-[var(--cd-ink)]",
         "disabled:bg-[var(--cd-surface)] aria-[invalid=true]:border-[var(--cd-danger)]",
         props.className ?? "",
@@ -49,7 +49,7 @@ export function buttonClass(variant: ButtonProps["variant"] = "primary", size: B
   return [
     "inline-flex items-center justify-center gap-2 rounded-[var(--cd-radius-sm)] font-medium transition-opacity",
     "disabled:cursor-not-allowed disabled:opacity-50",
-    size === "md" ? "h-12 px-5 text-[var(--cd-body)]" : "h-9 px-3 text-[var(--cd-small)]",
+    size === "md" ? "h-12 px-5 text-[length:var(--cd-body)]" : "h-9 px-3 text-[length:var(--cd-small)]",
     variant === "primary" && "bg-[var(--cd-ink)] text-white hover:opacity-90",
     variant === "secondary" &&
       "border border-[var(--cd-line)] bg-[var(--cd-bg)] text-[var(--cd-ink)] hover:bg-[var(--cd-surface)]",
@@ -69,7 +69,7 @@ export function FormError({ children }: { children?: ReactNode }) {
   return (
     <p
       role="alert"
-      className="rounded-[var(--cd-radius-sm)] bg-[var(--cd-danger-soft)] px-4 py-3 text-[var(--cd-small)] text-[var(--cd-danger)]"
+      className="rounded-[var(--cd-radius-sm)] bg-[var(--cd-danger-soft)] px-4 py-3 text-[length:var(--cd-small)] text-[var(--cd-danger)]"
     >
       {children}
     </p>

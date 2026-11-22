@@ -27,7 +27,7 @@ export async function AppShell({ area, children }: { area: Area; children: React
           <Link
             href="/"
             prefetch={false}
-            className="shrink-0 font-mono text-[var(--cd-label)] tracking-[0.08em] text-[var(--cd-ink)] uppercase"
+            className="shrink-0 font-mono text-[length:var(--cd-label)] tracking-[0.08em] text-[var(--cd-ink)] uppercase"
           >
             CODI·DOOH
           </Link>

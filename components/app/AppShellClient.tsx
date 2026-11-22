@@ -19,7 +19,7 @@ export function NavLinks({ items }: { items: NavItem[] }) {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={[
-              "shrink-0 rounded-[var(--cd-radius-pill)] px-3 py-1.5 text-[var(--cd-small)] font-medium transition-colors",
+              "shrink-0 rounded-[var(--cd-radius-pill)] px-3 py-1.5 text-[length:var(--cd-small)] font-medium transition-colors",
               active
                 ? "bg-[var(--cd-ink)] text-white"
                 : "text-[var(--cd-ink-2)] hover:bg-[var(--cd-surface)]",
@@ -109,7 +109,7 @@ export function AccountMenu({
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--cd-ink)] text-[11px] font-medium text-white">
           {initials || "·"}
         </span>
-        <span className="hidden max-w-[140px] truncate text-[var(--cd-small)] font-medium sm:block">
+        <span className="hidden max-w-[140px] truncate text-[length:var(--cd-small)] font-medium sm:block">
           {orgName}
         </span>
       </button>
@@ -119,8 +119,8 @@ export function AccountMenu({
           className="absolute right-0 mt-2 w-64 overflow-hidden rounded-[var(--cd-radius-md)] border border-[var(--cd-line)] bg-[var(--cd-bg)] shadow-[0_12px_40px_rgba(10,10,11,0.12)]"
         >
           <div className="border-b border-[var(--cd-line)] px-4 py-3">
-            <p className="truncate text-[var(--cd-small)] font-medium">{name}</p>
-            <p className="truncate text-[var(--cd-label)] text-[var(--cd-muted)]">{email}</p>
+            <p className="truncate text-[length:var(--cd-small)] font-medium">{name}</p>
+            <p className="truncate text-[length:var(--cd-label)] text-[var(--cd-muted)]">{email}</p>
           </div>
           {orgs.length > 1 ? (
             <div className="border-b border-[var(--cd-line)] py-1">
@@ -130,7 +130,7 @@ export function AccountMenu({
                   role="menuitem"
                   type="button"
                   onClick={() => void pick(org.id)}
-                  className="flex w-full items-center justify-between px-4 py-2 text-left text-[var(--cd-small)] hover:bg-[var(--cd-surface)]"
+                  className="flex w-full items-center justify-between px-4 py-2 text-left text-[length:var(--cd-small)] hover:bg-[var(--cd-surface)]"
                 >
                   <span className="truncate">{org.name}</span>
                   {org.id === activeOrgId ? <span className="text-[var(--cd-muted)]">Actual</span> : null}
@@ -142,7 +142,7 @@ export function AccountMenu({
             role="menuitem"
             type="button"
             onClick={() => void logout()}
-            className="w-full px-4 py-3 text-left text-[var(--cd-small)] font-medium hover:bg-[var(--cd-surface)]"
+            className="w-full px-4 py-3 text-left text-[length:var(--cd-small)] font-medium hover:bg-[var(--cd-surface)]"
           >
             Salir
           </button>
@@ -161,7 +161,7 @@ export function ActingAsBanner({ orgName }: { orgName: string }) {
   }
   return (
     <div className="bg-[var(--cd-night)] text-white">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2 text-[var(--cd-small)] sm:px-6">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2 text-[length:var(--cd-small)] sm:px-6">
         <span className="truncate">
           Operas como <strong className="font-medium">{orgName}</strong>
         </span>

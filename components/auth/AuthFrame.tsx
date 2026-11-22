@@ -17,14 +17,14 @@ export function AuthFrame({
     <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col justify-center px-4 py-10 sm:px-6">
       <Link
         href="/entrar"
-        className="font-mono text-[var(--cd-label)] tracking-[0.08em] text-[var(--cd-muted)] uppercase"
+        className="font-mono text-[length:var(--cd-label)] tracking-[0.08em] text-[var(--cd-muted)] uppercase"
       >
         CODI·DOOH
       </Link>
-      <h1 className="mt-3 text-[var(--cd-title)] leading-tight font-medium tracking-[-0.03em]">{title}</h1>
-      <p className="mt-2 text-[var(--cd-body)] text-[var(--cd-ink-2)]">{subtitle}</p>
+      <h1 className="mt-3 text-[length:var(--cd-title)] leading-tight font-medium tracking-[-0.03em]">{title}</h1>
+      <p className="mt-2 text-[length:var(--cd-body)] text-[var(--cd-ink-2)]">{subtitle}</p>
       <div className="mt-8">{children}</div>
-      <div className="mt-8 border-t border-[var(--cd-line)] pt-5 text-[var(--cd-small)] text-[var(--cd-muted)]">
+      <div className="mt-8 border-t border-[var(--cd-line)] pt-5 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
         {footer}
       </div>
     </main>
