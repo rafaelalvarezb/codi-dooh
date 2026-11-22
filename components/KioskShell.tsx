@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CodiPanel } from "@/components/CodiPanel";
 import { DoohPlayer } from "@/components/DoohPlayer";
@@ -25,13 +25,16 @@ export function KioskShell() {
   const sessionFromSignal = searchParams.get("session") === "1";
   const showDemoHints = searchParams.get("demo") === "1";
 
-  const [sessionActive, setSessionActive] = useState(
-    profile.billingMode === "fixed" || sessionFromSignal,
-  );
+  const initialSession = profile.billingMode === "fixed" || sessionFromSignal;
+  const sessionKey = `${profile.id}|${profile.billingMode}|${sessionFromSignal}`;
+  const [sessionActive, setSessionActive] = useState(initialSession);
+  const [prevSessionKey, setPrevSessionKey] = useState(sessionKey);
 
-  useEffect(() => {
-    setSessionActive(profile.billingMode === "fixed" || sessionFromSignal);
-  }, [profile.id, profile.billingMode, sessionFromSignal]);
+  // Reset the session when the profile or ?session= changes (render-time sync).
+  if (prevSessionKey !== sessionKey) {
+    setPrevSessionKey(sessionKey);
+    setSessionActive(initialSession);
+  }
 
   return (
     <div

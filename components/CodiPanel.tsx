@@ -75,6 +75,7 @@ export function CodiPanel({
       }
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets the checkout state machine when the session ends (intentional)
     setState("standby");
     setQr(null);
     setPaidAt(null);
