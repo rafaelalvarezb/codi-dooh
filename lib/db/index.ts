@@ -47,9 +47,20 @@ async function createDb(): Promise<Db> {
   }
 
   const persist = process.env.NODE_ENV === "development";
-  return createPgliteDb(
-    persist ? path.join(process.cwd(), ".data", "pglite") : undefined,
-  );
+  return createPgliteDb(persist ? LOCAL_PGLITE_DIR : undefined);
+}
+
+/** Where `next dev` keeps its local database when DATABASE_URL is unset. */
+export const LOCAL_PGLITE_DIR = path.join(process.cwd(), ".data", "pglite");
+
+/**
+ * For CLI scripts (npm run db:seed) without DATABASE_URL: open the same
+ * on-disk PGlite that `next dev` uses. Only one process may open it at a time.
+ */
+export async function openLocalPersistentDb(): Promise<Db> {
+  const db = await createPgliteDb(LOCAL_PGLITE_DIR);
+  setDbForTests(db);
+  return db;
 }
 
 export async function createPgliteDb(dataDir?: string): Promise<Db> {

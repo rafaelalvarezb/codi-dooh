@@ -6,7 +6,7 @@
  * platform admin can "operate as" them from /admin.
  */
 import { randomBytes } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   campaignScreens,
@@ -146,7 +146,12 @@ export async function seedDemo(now = new Date()) {
       spotPriceCents: defaultSpotPriceCents,
       isDemo: true,
     })
-    .onConflictDoNothing();
+    // Re-seeding refreshes the pilot window: it always started 14 days ago
+    // (matching the regenerated history) and its end only moves forward.
+    .onConflictDoUpdate({
+      target: campaigns.id,
+      set: { startsAt: sql`excluded.starts_at`, endsAt: sql`greatest(${campaigns.endsAt}, excluded.ends_at)` },
+    });
 
   await db
     .insert(campaignScreens)
@@ -183,15 +188,17 @@ function traffic(hour: number) {
 
 /**
  * Two weeks of plays and CoDi payments on the demo screens, so dashboards
- * have something to show. Only runs once: skipped if demo plays exist.
+ * have something to show. Each run replaces the previous demo activity
+ * (rows flagged isDemo on the demo screens) with the last 14 days, so it
+ * never duplicates. Real plays and payments on those screens are untouched.
  */
 export async function seedDemoHistory(now = new Date()) {
   const db = await getDb();
-  const [existing] = await db
-    .select({ n: sql<number>`count(*)`.mapWith(Number) })
-    .from(plays)
-    .where(and(eq(plays.campaignId, DEMO.campaign), eq(plays.isDemo, true)));
-  if (existing.n > 0) return { plays: 0, payments: 0, skipped: true };
+  const [campaign] = await db
+    .select({ startsAt: campaigns.startsAt })
+    .from(campaigns)
+    .where(eq(campaigns.id, DEMO.campaign));
+  const campaignStart = campaign?.startsAt.getTime() ?? 0;
 
   const playRows: Array<typeof plays.$inferInsert> = [];
   const paymentRows: Array<typeof payments.$inferInsert> = [];
@@ -199,10 +206,13 @@ export async function seedDemoHistory(now = new Date()) {
   const todayMx = Math.floor(mxNow / DAY) * DAY; // midnight "today" as MX wall clock
 
   DEMO.screens.forEach((screen, si) => {
-    const rnd = prng(1000 + si * 7919);
     const screenFactor = [1, 0.8, 0.55][si] ?? 0.6;
-    for (let d = HISTORY_DAYS - 1; d >= 0; d--) {
+    for (let d = HISTORY_DAYS; d >= 0; d--) {
+      // Day HISTORY_DAYS is the partial first day (only after the pilot started).
       const dayStartMx = todayMx - d * DAY;
+      // Seeded per screen and calendar day, so re-running reproduces the
+      // same rows (deduplicated by id) and only adds the days that are new.
+      const rnd = prng(1000 + si * 7919 + (dayStartMx / DAY) * 104_729);
       const weekday = new Date(dayStartMx).getUTCDay();
       const dayFactor = weekday === 0 ? 0.6 : weekday === 6 ? 0.85 : 1;
       for (let hour = OPEN_HOUR; hour < CLOSE_HOUR; hour++) {
@@ -214,7 +224,7 @@ export async function seedDemoHistory(now = new Date()) {
         const slot = 3_600_000 / nPlays;
         for (let i = 0; i < nPlays; i++) {
           const start = Math.round(hourStart + i * slot + rnd() * (slot - 7000));
-          if (start + 6000 > now.getTime()) continue;
+          if (start + 6000 > now.getTime() || start < campaignStart) continue;
           playRows.push({
             id: `ply_demo_${si}_${start}`,
             screenId: screen.id,
@@ -249,11 +259,16 @@ export async function seedDemoHistory(now = new Date()) {
     }
   });
 
-  for (let i = 0; i < playRows.length; i += 1000) {
-    await db.insert(plays).values(playRows.slice(i, i + 1000)).onConflictDoNothing();
-  }
-  for (let i = 0; i < paymentRows.length; i += 1000) {
-    await db.insert(payments).values(paymentRows.slice(i, i + 1000)).onConflictDoNothing();
-  }
-  return { plays: playRows.length, payments: paymentRows.length, skipped: false };
+  const screenIds = DEMO.screens.map((s) => s.id);
+  await db.transaction(async (tx) => {
+    await tx.delete(plays).where(and(inArray(plays.screenId, screenIds), eq(plays.isDemo, true)));
+    await tx.delete(payments).where(and(inArray(payments.machineId, screenIds), eq(payments.isDemo, true)));
+    for (let i = 0; i < playRows.length; i += 1000) {
+      await tx.insert(plays).values(playRows.slice(i, i + 1000)).onConflictDoNothing();
+    }
+    for (let i = 0; i < paymentRows.length; i += 1000) {
+      await tx.insert(payments).values(paymentRows.slice(i, i + 1000)).onConflictDoNothing();
+    }
+  });
+  return { plays: playRows.length, payments: paymentRows.length };
 }
