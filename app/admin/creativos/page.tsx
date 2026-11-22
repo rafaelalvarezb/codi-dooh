@@ -26,7 +26,7 @@ export default async function Page() {
       <PageHeader
         eyebrow="Admin"
         title="Videos"
-        description="Todo video se publica al instante. Si pausas o rechazas uno, sale de todos los kioscos en menos de un minuto y el anunciante ve el motivo."
+        description="Todo video se publica al instante. Si pausas o rechazas uno, sale de todos los kioscos en alrededor de un minuto, en cuanto termine el video que esté pasando. El anunciante ve el motivo."
       />
       <div className="mt-8">
         {items.length === 0 ? (

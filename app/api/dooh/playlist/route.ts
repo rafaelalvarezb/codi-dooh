@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     if (!playlist) return NextResponse.json({ error: "Pantalla no encontrada" }, { status: 404 });
     after(() => touchMachine(screen).catch(() => undefined));
     return NextResponse.json(playlist, {
-      headers: { "Cache-Control": "public, max-age=0, s-maxage=10, stale-while-revalidate=20" },
+      headers: { "Cache-Control": "public, max-age=0, s-maxage=5, stale-while-revalidate=10" },
     });
   } catch (error) {
     console.error("[dooh/playlist]", error);
