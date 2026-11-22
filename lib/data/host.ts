@@ -9,19 +9,7 @@ import { machineStatus } from "@/lib/machines";
 import { nextPayout, periodRevenue, recentMonths, type Booking } from "@/lib/revenue";
 import { getSettings } from "@/lib/settings";
 import { NotFoundError, ValidationError, type OrgCtx } from "./context";
-
-export const SITE_KINDS = ["parking", "restroom", "laundry", "vending"] as const;
-export type SiteKind = (typeof SITE_KINDS)[number];
-export const SCREEN_PROFILES = ["parking", "bathroom", "laundry"] as const;
-export type ScreenProfile = (typeof SCREEN_PROFILES)[number];
-
-/** Suggested kiosk checkout flow for each kind of site. */
-export const DEFAULT_PROFILE: Record<SiteKind, ScreenProfile> = {
-  parking: "parking",
-  restroom: "bathroom",
-  laundry: "laundry",
-  vending: "laundry",
-};
+import { DEFAULT_PROFILE, type ScreenProfile, type SiteKind } from "@/lib/host-catalog";
 
 function assertHost(ctx: OrgCtx) {
   if (!canHost(ctx.kind)) throw new ValidationError("Tu cuenta no es de host.");

@@ -84,3 +84,13 @@ export async function apiViewer(
 export function orgCtx(viewer: Viewer & { org: NonNullable<Viewer["org"]> }): OrgCtx {
   return { orgId: viewer.org.id, kind: viewer.org.kind };
 }
+
+/** For route handlers that act on the caller's active org within an area. */
+export async function apiOrgCtx(
+  area: Exclude<Area, "admin">,
+): Promise<{ ctx: OrgCtx; error?: never } | { ctx?: never; error: NextResponse }> {
+  const { viewer, error } = await apiViewer(area);
+  if (error) return { error };
+  if (!viewer.org) return { error: NextResponse.json({ error: "Elige una organización." }, { status: 403 }) };
+  return { ctx: orgCtx({ ...viewer, org: viewer.org }) };
+}
