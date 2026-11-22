@@ -268,16 +268,23 @@ Si no hay clic pero sí sale `Pulse...`: en el sketch cambia `RELAY_ON` a `HIGH`
 
 **Regla de oro:** el eliminador 12V **nunca** se conecta a pines del ESP32. Solo a la chapa a través del relé.
 
+### Importante: el “tubito” del eliminador
+El eliminador termina en un **enchufe redondo (jack)**. Ese tubito **no** entra en el relé (el relé solo tiene tornillos).  
+Para conectar 12V al relé necesitas **los dos cables de adentro** del eliminador (+ y −), no el tubito completo:
+
+- Opción fácil: un **adaptador jack DC hembra a bornes/tornillos** (Mercado Libre: “jack 5.5 hembra a bornes”).
+- Opción casera: cortar la punta del cable del eliminador y pelar los 2 hilos (solo con el eliminador **desenchufado**).
+
 ### D1. Apaga todo
 1. Desconecta el USB del ESP32.
-2. El eliminador 12V **desenchufado** de la pared.
+2. El eliminador 12V **desenchufado de la pared** (no basta con “apagado”: sácalo del contacto).
 
 ### D2. Tornillos del canal 1 del relé
 En el bloque de tornillos del **canal 1**:
 
 | Tornillo relé | Va a… |
 |---------------|--------|
-| **COM** | Cable **positivo (+)** del eliminador 12V (suele ser el del centro del plug o el marcado +) |
+| **COM** | Cable **positivo (+)** del eliminador 12V (suele ser el del centro del jack o el marcado +) |
 | **NO** | Un cable de la **chapa** (da igual cuál de los 2 por ahora si no están marcados; si hay rojo/negro, usa el rojo aquí) |
 | (el otro cable de la chapa) | Cable **negativo (− / GND)** del eliminador 12V |
 
