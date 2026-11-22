@@ -11,8 +11,8 @@ export async function GET() {
 
   return NextResponse.json({
     email: session.email,
-    machines: listMachines(),
-    payments: listPayments(50),
-    stats: paymentStats(),
+    machines: await listMachines(),
+    payments: await listPayments(50),
+    stats: await paymentStats(),
   });
 }

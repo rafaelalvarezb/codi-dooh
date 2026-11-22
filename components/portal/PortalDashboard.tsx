@@ -27,9 +27,11 @@ export async function PortalDashboard() {
   const session = await getPortalSession();
   if (!session) redirect("/portal/login");
 
-  const machines = listMachines();
-  const payments = listPayments(40);
-  const stats = paymentStats();
+  const [machines, payments, stats] = await Promise.all([
+    listMachines(),
+    listPayments(40),
+    paymentStats(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-10">
@@ -95,8 +97,7 @@ export async function PortalDashboard() {
           Transacciones CoDi
         </h2>
         <p className="mt-1 text-[14px] text-[var(--cd-muted)]">
-          Pagos recientes de esta instancia (memoria; migrar a Postgres en
-          producción).
+          Pagos recientes guardados en la base de datos.
         </p>
         {payments.length === 0 ? (
           <p className="mt-6 text-[14px] text-[var(--cd-subtle)]">

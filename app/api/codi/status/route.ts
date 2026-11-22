@@ -9,7 +9,8 @@ import type { PaymentStatusResponse } from "@/lib/types";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const qrId = searchParams.get("qrId")?.trim();
+  const rawQrId = searchParams.get("qrId")?.trim() ?? "";
+  const qrId = /^[A-Za-z0-9_.:-]{1,128}$/.test(rawQrId) ? rawQrId : "";
 
   if (!qrId) {
     return NextResponse.json(
@@ -19,7 +20,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const cached = getPayment(qrId);
+    const cached = await getPayment(qrId).catch((ledgerError) => {
+      console.error("[status] ledger read failed", ledgerError);
+      return undefined;
+    });
     if (cached?.status === "PAID") {
       const payload: PaymentStatusResponse = {
         qrId,
@@ -36,10 +40,12 @@ export async function GET(request: Request) {
     const paid = findPaidTransaction(txs);
 
     if (paid) {
-      markPaid(qrId, {
+      await markPaid(qrId, {
         transactionId: paid.id,
         amount: paid.amount,
         datePaid: paid.datePaid,
+      }).catch((ledgerError) => {
+        console.error("[status] ledger write failed", ledgerError);
       });
 
       const payload: PaymentStatusResponse = {
