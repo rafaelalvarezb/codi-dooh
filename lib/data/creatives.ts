@@ -30,7 +30,6 @@ export async function createCreative(
       height: input.meta.height,
       codec: input.meta.codec,
       sizeBytes: input.meta.sizeBytes,
-      fitMode: check.fitMode,
       status: decision.status,
       moderationNote: decision.note ?? null,
     })

@@ -12,22 +12,17 @@ export type ProbeResult = {
   height: number;
 };
 
+type Mp4File = ReturnType<typeof createFile>;
+
 export function probeMp4(data: ArrayBuffer): ProbeResult | null {
   const file = createFile();
-  let result: ProbeResult | null = null;
-  file.onReady = (info) => {
-    const video = info.videoTracks?.[0];
-    if (!video || !info.timescale) return;
-    const durationMs = Math.round((info.duration / info.timescale) * 1000);
-    result = {
-      codec: video.codec,
-      durationMs,
-      width: video.video?.width ?? video.track_width,
-      height: video.video?.height ?? video.track_height,
-    };
+  let ready = false;
+  let failed = false;
+  file.onReady = () => {
+    ready = true;
   };
   file.onError = () => {
-    result = null;
+    failed = true;
   };
   try {
     file.appendBuffer(MP4BoxBuffer.fromArrayBuffer(data, 0));
@@ -35,5 +30,34 @@ export function probeMp4(data: ArrayBuffer): ProbeResult | null {
   } catch {
     return null;
   }
-  return result;
+  if (!ready || failed) return null;
+
+  const info = file.getInfo();
+  const video = info.videoTracks?.[0];
+  if (!video || !info.timescale) return null;
+  return {
+    codec: video.codec,
+    durationMs: durationOf(file),
+    width: video.video?.width ?? video.track_width,
+    height: video.video?.height ?? video.track_height,
+  };
+}
+
+/**
+ * Duration in ms. Regular MP4s carry it in the movie header; fragmented MP4s
+ * (common from some exporters) leave it at 0, so fall back to the video
+ * track's samples (parsed from every fragment once the whole file is in),
+ * then to the fragment header (mehd).
+ */
+function durationOf(file: Mp4File): number {
+  const info = file.getInfo();
+  if (info.duration > 0 && info.timescale) return Math.round((info.duration / info.timescale) * 1000);
+  const video = info.videoTracks?.[0];
+  if (video && video.samples_duration > 0 && video.timescale) {
+    return Math.round((video.samples_duration / video.timescale) * 1000);
+  }
+  const frag = info.fragment_duration as unknown as { num: number; den: number } | number | undefined;
+  if (typeof frag === "object" && frag && frag.den) return Math.round((frag.num / frag.den) * 1000);
+  if (typeof frag === "number" && frag > 0) return Math.round((frag / info.timescale) * 1000);
+  return 0;
 }

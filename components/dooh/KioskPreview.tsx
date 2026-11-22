@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { CreativeSurface, type FitMode } from "@/components/dooh/CreativeSurface";
+import { CreativeSurface } from "@/components/dooh/CreativeSurface";
 import { KIOSK_FRAME } from "@/lib/video/rules";
 
 /**
@@ -14,12 +14,10 @@ import { KIOSK_FRAME } from "@/lib/video/rules";
 export function KioskPreview({
   src,
   poster,
-  fitMode,
   showSafeZone = true,
 }: {
   src: string;
   poster?: string | null;
-  fitMode: FitMode;
   showSafeZone?: boolean;
 }) {
   const boxRef = useRef<HTMLDivElement | null>(null);
@@ -55,7 +53,7 @@ export function KioskPreview({
             style={{ gridTemplateColumns: `minmax(0,1fr) ${KIOSK_FRAME.panel}px` }}
           >
             <div className="relative h-full min-h-0 overflow-hidden bg-black">
-              <CreativeSurface src={src} poster={poster} fitMode={fitMode} loop />
+              <CreativeSurface src={src} poster={poster} loop />
               {showSafeZone ? (
                 <div className="pointer-events-none absolute inset-[6%] rounded-[20px] border-2 border-dashed border-white/70">
                   <span className="absolute top-3 left-3 rounded-full bg-black/60 px-3 py-1 font-mono text-[18px] text-white">

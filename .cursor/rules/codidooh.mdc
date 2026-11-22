@@ -19,4 +19,4 @@ Reglas no negociables:
 - En errores, solo qué pasó; sin pasos a seguir.
 - Acento azul #2B50FF solo para el estado en vivo. Verde y rojo solo para resultados y el comparativo.
 - Tipografía: Geist (UI) y Geist Mono (etiquetas, timer, referencias). Monto con numerales tabulares.
-- El anuncio DOOH usa object-cover a pantalla completa en su columna (sin letterbox). Excepción: videos verticales de anunciantes (fitMode "blur") se ven completos con su póster difuminado de fondo, nunca con franjas negras.
+- El anuncio DOOH usa object-contain en su columna para no recortar logos/texto del creativo (fondo negro OK).

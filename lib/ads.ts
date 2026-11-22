@@ -1,6 +1,6 @@
 /**
  * DOOH creatives for the kiosk.
- * MP4s live in /public/ads and are committed so production can play them.
+ * Real 6s bumper MP4s in /public/ads (committed for production).
  */
 export type AdCreative = {
   id: string;
@@ -19,5 +19,4 @@ export const AD_PLAYLIST: AdCreative[] = [
   { id: "spot-08", src: "/ads/spot-08.mp4", label: "Renault", durationHintSec: 6 },
   { id: "spot-09", src: "/ads/spot-09.mp4", label: "Playmobil", durationHintSec: 6 },
   { id: "spot-10", src: "/ads/spot-10.mp4", label: "Porsche Playmobil", durationHintSec: 6 },
-  { id: "spot-11", src: "/ads/spot-11.mp4", label: "Extra", durationHintSec: 6 },
 ];

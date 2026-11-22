@@ -65,7 +65,6 @@ export async function NewCampaignView({ mode }: { mode: Mode }) {
             label: c.label,
             src: c.blobUrl,
             poster: c.posterUrl,
-            fitMode: c.fitMode,
             durationMs: c.durationMs,
             width: c.width,
             height: c.height,
@@ -152,7 +151,6 @@ export async function CampaignDetailView({
           <KioskPreview
             src={campaign.creative.blobUrl}
             poster={campaign.creative.posterUrl}
-            fitMode={campaign.creative.fitMode}
             showSafeZone={false}
           />
           <div className="grid grid-cols-2 gap-3">

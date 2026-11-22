@@ -40,7 +40,6 @@ export async function makeCreative(org: OrgCtx, opts: { durationMs?: number; sta
     height: 720,
     codec: "avc1.64001f",
     sizeBytes: 1000,
-    fitMode: "cover",
     status: opts.status ?? "active",
   });
   return id;

@@ -12,7 +12,6 @@ export type PlaylistItem = {
   src: string;
   poster: string | null;
   durationMs: number;
-  fitMode: "cover" | "blur";
   label: string;
   weight: number;
 };
@@ -38,7 +37,6 @@ export async function getPlaylist(screenId: string, now = new Date()): Promise<P
       src: creatives.blobUrl,
       poster: creatives.posterUrl,
       durationMs: creatives.durationMs,
-      fitMode: creatives.fitMode,
       label: creatives.label,
       weight: campaignScreens.spots,
     })

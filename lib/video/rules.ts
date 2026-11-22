@@ -16,10 +16,15 @@ export const MIN_SHORT_SIDE_PX = 720;
 export const DOOH_COLUMN = { width: 828, height: 768 } as const;
 export const KIOSK_FRAME = { width: 1280, height: 800, padding: 16, panel: 420 } as const;
 
-/** Crop above this share of the video triggers a warning in the preview. */
-export const CROP_WARNING_THRESHOLD = 0.25;
+/** Aspect difference under which a video counts as filling the column. */
+export const FILL_TOLERANCE = 0.04;
 
-export type FitMode = "cover" | "blur";
+/**
+ * Where the black bars go. The kiosk always shows the whole creative
+ * (`object-contain` on black) so logos and text are never cropped
+ * (design/SPEC.md).
+ */
+export type Letterbox = "none" | "sides" | "topBottom";
 
 export type VideoMeta = {
   codec: string;
@@ -32,11 +37,7 @@ export type VideoMeta = {
 export type CreativeCheck = {
   ok: boolean;
   errors: string[];
-  fitMode: FitMode;
-  /** Share of the video hidden by `object-cover` in the DOOH column (0–1). */
-  coverCrop: number;
-  /** Share actually hidden with the chosen fit mode (0 for blur). */
-  visibleCrop: number;
+  letterbox: Letterbox;
   durationSec: number | null;
 };
 
@@ -45,22 +46,16 @@ export function isH264(codec: string): boolean {
   return /^avc[13](\.|$)/i.test(codec.trim());
 }
 
-/** Landscape (and square) fills the column; portrait shows whole over a blurred poster. */
-export function fitModeFor(width: number, height: number): FitMode {
-  return width >= height ? "cover" : "blur";
-}
-
-/** Fraction of the video cut off when scaled to cover a box (0 = perfect fit). */
-export function coverCropFraction(
+/** Black bars of a video shown whole (`object-contain`) in a box. */
+export function letterboxFor(
   width: number,
   height: number,
   box: { width: number; height: number } = DOOH_COLUMN,
-): number {
-  if (width <= 0 || height <= 0) return 0;
-  const videoAr = width / height;
-  const boxAr = box.width / box.height;
-  const kept = videoAr > boxAr ? boxAr / videoAr : videoAr / boxAr;
-  return Math.max(0, Math.min(1, 1 - kept));
+): Letterbox {
+  if (width <= 0 || height <= 0) return "none";
+  const ratio = width / height / (box.width / box.height);
+  if (Math.abs(ratio - 1) <= FILL_TOLERANCE) return "none";
+  return ratio > 1 ? "topBottom" : "sides";
 }
 
 export function matchDuration(durationMs: number): number | null {
@@ -88,14 +83,10 @@ export function checkCreative(meta: VideoMeta): CreativeCheck {
       `La resolución es ${meta.width}×${meta.height}. El lado corto debe medir al menos ${MIN_SHORT_SIDE_PX} px.`,
     );
   }
-  const fitMode = fitModeFor(meta.width, meta.height);
-  const coverCrop = coverCropFraction(meta.width, meta.height);
   return {
     ok: errors.length === 0,
     errors,
-    fitMode,
-    coverCrop,
-    visibleCrop: fitMode === "cover" ? coverCrop : 0,
+    letterbox: letterboxFor(meta.width, meta.height),
     durationSec,
   };
 }

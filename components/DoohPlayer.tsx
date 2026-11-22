@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AD_PLAYLIST } from "@/lib/ads";
 import type { BillingMode } from "@/lib/kiosk-profile";
-import { CreativeSurface, type FitMode } from "@/components/dooh/CreativeSurface";
+import { CreativeSurface } from "@/components/dooh/CreativeSurface";
 
 interface DoohPlayerProps {
   billingMode: BillingMode;
@@ -20,7 +20,6 @@ type Item = {
   campaignId: string | null;
   src: string;
   poster: string | null;
-  fitMode: FitMode;
 };
 
 type RemotePlaylist = {
@@ -29,7 +28,6 @@ type RemotePlaylist = {
     campaignId: string;
     src: string;
     poster: string | null;
-    fitMode: FitMode;
   }>;
   sequence: string[];
 };
@@ -46,7 +44,6 @@ const LOCAL_ITEMS: Item[] = AD_PLAYLIST.map((ad) => ({
   campaignId: null,
   src: ad.src,
   poster: null,
-  fitMode: "cover",
 }));
 
 function toItems(pl: RemotePlaylist): Item[] {
@@ -54,7 +51,7 @@ function toItems(pl: RemotePlaylist): Item[] {
   return pl.sequence
     .map((id) => byCampaign.get(id))
     .filter((i): i is RemotePlaylist["items"][number] => Boolean(i))
-    .map((i) => ({ key: i.campaignId, creativeId: i.creativeId, campaignId: i.campaignId, src: i.src, poster: i.poster, fitMode: i.fitMode }));
+    .map((i) => ({ key: i.campaignId, creativeId: i.creativeId, campaignId: i.campaignId, src: i.src, poster: i.poster}));
 }
 
 function readStorage<T>(key: string): T | null {
@@ -75,9 +72,11 @@ function writeStorage(key: string, value: unknown) {
 }
 
 /**
- * DOOH surface. With a linked screen it pulls the live playlist every 60 s
- * and reports each play. It never goes dark: on network errors it keeps the
- * last good playlist (also cached in localStorage), then the bundled ads.
+ * DOOH surface — full creative visible (object-contain, black bars OK) so
+ * logos and text are never cropped. With a linked screen it pulls the live
+ * playlist every 60 s and reports each play. It never goes dark: on network
+ * errors it keeps the last good playlist (also cached in localStorage), then
+ * the bundled ads. Playlist always runs so ads monetize idle + checkout time.
  */
 export function DoohPlayer({ screenId, token }: DoohPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -236,7 +235,6 @@ export function DoohPlayer({ screenId, token }: DoohPlayerProps) {
           videoRef={videoRef}
           src={creative.src}
           poster={creative.poster}
-          fitMode={creative.fitMode}
           onEnded={handleEnded}
           onError={handleError}
           onPlaying={handlePlaying}

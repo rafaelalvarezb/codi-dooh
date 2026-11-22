@@ -111,7 +111,7 @@ export async function seedDemo(now = new Date()) {
     )
     .onConflictDoNothing();
 
-  // Placeholder creative from public/ads (1280×720, 6 s, H.264) until the
+  // Placeholder creative from public/ads (1920×1080, 6 s, H.264) until the
   // real Silvertag spot is uploaded through the platform.
   await db
     .insert(creatives)
@@ -122,15 +122,18 @@ export async function seedDemo(now = new Date()) {
       blobUrl: "/ads/spot-05.mp4",
       posterUrl: null,
       durationMs: 6000,
-      width: 1280,
-      height: 720,
-      codec: "avc1.64001f",
-      sizeBytes: 2_949_825,
-      fitMode: "cover",
+      width: 1920,
+      height: 1080,
+      codec: "avc1.640028",
+      sizeBytes: 3_335_043,
       status: "active",
       isDemo: true,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      // Keep the demo creative's metadata in sync with the file in public/ads.
+      target: creatives.id,
+      set: { width: 1920, height: 1080, codec: "avc1.640028", sizeBytes: 3_335_043, durationMs: 6000 },
+    });
 
   await db
     .insert(campaigns)

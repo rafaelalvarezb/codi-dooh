@@ -124,7 +124,6 @@ export const creatives = pgTable(
     height: integer("height").notNull(),
     codec: text("codec").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
-    fitMode: text("fit_mode", { enum: ["cover", "blur"] }).notNull(),
     status: text("status", { enum: ["active", "paused", "rejected"] })
       .notNull()
       .default("active"),

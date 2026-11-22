@@ -130,7 +130,6 @@ export async function listCampaigns(ctx: OrgCtx, opts?: { mode?: "advertiser" | 
         posterUrl: creatives.posterUrl,
         blobUrl: creatives.blobUrl,
         status: creatives.status,
-        fitMode: creatives.fitMode,
         durationMs: creatives.durationMs,
       },
       screenCount: sql<number>`(select count(*) from ${campaignScreens} where ${campaignScreens.campaignId} = ${campaigns.id})`.mapWith(Number),

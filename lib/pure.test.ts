@@ -4,8 +4,7 @@ import { describe, expect, it } from "vitest";
 import { buildSequence } from "@/lib/rotation";
 import {
   checkCreative,
-  coverCropFraction,
-  fitModeFor,
+  letterboxFor,
   isH264,
   matchDuration,
 } from "@/lib/video/rules";
@@ -66,22 +65,20 @@ describe("creative rules", () => {
     expect(bad.errors).toHaveLength(4);
   });
 
-  it("fills landscape and blurs portrait, measuring the crop", () => {
-    expect(fitModeFor(1920, 1080)).toBe("cover");
-    expect(fitModeFor(1080, 1920)).toBe("blur");
-    // DOOH column 828×768: 16:9 loses ~39%, 9:16 would lose ~48% if covered.
-    expect(coverCropFraction(1920, 1080)).toBeCloseTo(0.394, 2);
-    expect(coverCropFraction(1080, 1920)).toBeCloseTo(0.478, 2);
-    expect(coverCropFraction(828, 768)).toBeCloseTo(0, 5);
-    const portrait = checkCreative({ ...ok, width: 1080, height: 1920 });
-    expect(portrait.fitMode).toBe("blur");
-    expect(portrait.visibleCrop).toBe(0);
+  it("never crops: tells where the black bars go in the 828×768 column", () => {
+    expect(letterboxFor(1920, 1080)).toBe("topBottom"); // 16:9 is wider than the column
+    expect(letterboxFor(1080, 1920)).toBe("sides"); // 9:16 is taller
+    expect(letterboxFor(828, 768)).toBe("none");
+    expect(letterboxFor(1080, 1000)).toBe("none"); // within 4%
+    expect(checkCreative({ ...ok, width: 1080, height: 1920 }).letterbox).toBe("sides");
   });
 
-  it("probes a real MP4 from the repo", () => {
+  it("probes a real (fragmented) MP4 from the repo", () => {
     const buf = readFileSync(path.join(process.cwd(), "public/ads/spot-01.mp4"));
     const meta = probeMp4(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer);
-    expect(meta).toEqual({ codec: "avc1.64001f", durationMs: 6000, width: 1280, height: 720 });
+    // public/ads bumpers are fragmented MP4s: the movie header says 0 s, the
+    // duration comes from the video samples.
+    expect(meta).toEqual({ codec: "avc1.640028", durationMs: 6000, width: 1920, height: 1080 });
     expect(probeMp4(new ArrayBuffer(16))).toBeNull();
   });
 });

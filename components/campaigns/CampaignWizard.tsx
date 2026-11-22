@@ -7,13 +7,7 @@ import { DemoBadge } from "@/components/app/DemoBadge";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
 import { capturePoster, inspectFile, uploadCreative, type UploadMode } from "@/lib/client/creative-upload";
 import { campaignMarketValueCents, formatMxn } from "@/lib/pricing";
-import {
-  coverCropFraction,
-  CROP_WARNING_THRESHOLD,
-  MAX_CREATIVE_BYTES,
-  type CreativeCheck,
-  type FitMode,
-} from "@/lib/video/rules";
+import { letterboxFor, MAX_CREATIVE_BYTES, type CreativeCheck, type Letterbox } from "@/lib/video/rules";
 
 export type WizardScreen = {
   id: string;
@@ -30,7 +24,6 @@ export type WizardCreative = {
   label: string;
   src: string;
   poster: string | null;
-  fitMode: FitMode;
   durationMs: number;
   width: number;
   height: number;
@@ -245,7 +238,7 @@ export function CampaignWizard(props: Props) {
               <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Revisa y publica</h2>
               <p className="mt-1 text-[length:var(--cd-small)] text-[var(--cd-muted)]">Así se verá en el kiosco.</p>
               <div className="mt-4">
-                <KioskPreview src={creative.src} poster={creative.poster} fitMode={creative.fitMode} showSafeZone={false} />
+                <KioskPreview src={creative.src} poster={creative.poster} showSafeZone={false} />
               </div>
             </div>
             <dl className="divide-y divide-[var(--cd-line)] self-start rounded-[var(--cd-radius-md)] border border-[var(--cd-line)] text-[length:var(--cd-small)]">
@@ -317,7 +310,7 @@ function CreativeStep({
   const [progress, setProgress] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [check, setCheck] = useState<CreativeCheck | null>(null);
-  const [localPreview, setLocalPreview] = useState<{ src: string; fitMode: FitMode } | null>(null);
+  const [localPreview, setLocalPreview] = useState<{ src: string; letterbox: Letterbox } | null>(null);
   const busy = phase !== "idle";
 
   async function onFile(file: File) {
@@ -342,7 +335,7 @@ function CreativeStep({
       return;
     }
     const objectUrl = URL.createObjectURL(file);
-    setLocalPreview({ src: objectUrl, fitMode: inspected.check.fitMode });
+    setLocalPreview({ src: objectUrl, letterbox: inspected.check.letterbox });
 
     try {
       setPhase("uploading");
@@ -358,11 +351,11 @@ function CreativeStep({
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
-        creative?: { id: string; label: string; blobUrl: string; posterUrl: string | null; fitMode: FitMode; durationMs: number; width: number; height: number };
+        creative?: { id: string; label: string; blobUrl: string; posterUrl: string | null; durationMs: number; width: number; height: number };
       };
       if (!res.ok || !data.creative) throw new Error(data.error ?? "No se pudo guardar el video.");
       const c = data.creative;
-      onChange({ id: c.id, label: c.label, src: c.blobUrl, poster: c.posterUrl, fitMode: c.fitMode, durationMs: c.durationMs, width: c.width, height: c.height });
+      onChange({ id: c.id, label: c.label, src: c.blobUrl, poster: c.posterUrl, durationMs: c.durationMs, width: c.width, height: c.height });
     } catch (err) {
       setErrors([err instanceof Error ? err.message : "No se pudo subir el video."]);
     } finally {
@@ -370,9 +363,8 @@ function CreativeStep({
     }
   }
 
-  const preview = value ? { src: value.src, poster: value.poster, fitMode: value.fitMode } : localPreview ? { ...localPreview, poster: null } : null;
-  const crop = value ? (value.fitMode === "cover" ? coverCropFraction(value.width, value.height) : 0) : (check?.visibleCrop ?? 0);
-  const fit = value?.fitMode ?? localPreview?.fitMode;
+  const preview = value ? { src: value.src, poster: value.poster } : localPreview ? { src: localPreview.src, poster: null } : null;
+  const bars: Letterbox | null = value ? letterboxFor(value.width, value.height) : (localPreview?.letterbox ?? check?.letterbox ?? null);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
@@ -384,7 +376,7 @@ function CreativeStep({
 
         <div className="mt-4">
           {preview ? (
-            <KioskPreview src={preview.src} poster={preview.poster} fitMode={preview.fitMode} />
+            <KioskPreview src={preview.src} poster={preview.poster} />
           ) : (
             <button
               type="button"
@@ -439,15 +431,13 @@ function CreativeStep({
 
         {preview && !busy ? (
           <div className="mt-4 space-y-2 text-[length:var(--cd-small)]">
-            {fit === "blur" ? (
-              <p className="text-[var(--cd-ink-2)]">Tu video vertical se ve completo, con fondo difuminado a los lados.</p>
-            ) : crop > CROP_WARNING_THRESHOLD ? (
-              <p className="rounded-[var(--cd-radius-sm)] bg-[var(--cd-surface)] px-4 py-3 text-[var(--cd-ink-2)]">
-                Se recorta {Math.round(crop * 100)}% del video a los lados. Mantén logos y texto dentro de la zona segura.
-              </p>
-            ) : (
-              <p className="text-[var(--cd-ink-2)]">Tu video llena la pantalla casi sin recorte.</p>
-            )}
+            <p className="text-[var(--cd-ink-2)]">
+              {bars === "sides"
+                ? "Tu video se ve completo, sin recortes. Como es más angosto que la pantalla, quedan franjas negras a los lados."
+                : bars === "topBottom"
+                  ? "Tu video se ve completo, sin recortes. Como es más ancho que la pantalla, quedan franjas negras arriba y abajo."
+                  : "Tu video se ve completo y llena la pantalla."}
+            </p>
             <button type="button" onClick={() => inputRef.current?.click()} className="font-medium underline underline-offset-4">
               Cambiar video
             </button>
