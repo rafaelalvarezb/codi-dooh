@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/app/Page";
 import { requireViewer } from "@/lib/auth/dal";
 import { listMachines } from "@/lib/machines";
 import { listPayments, paymentStats } from "@/lib/payment-store";
+import { kioskPath, screenToken } from "@/lib/screen-token";
 
 function formatMxn(amount: number): string {
   return amount.toLocaleString("es-MX", {
@@ -71,7 +72,13 @@ export async function AdminOverview() {
               <div className="flex items-center gap-3">
                 <StatusPill status={m.status} />
                 <Link
-                  href={m.kioskPath}
+                  href={
+                    m.tokenVersion != null
+                      ? kioskPath({ id: m.id, profile: m.profile }, screenToken(m.id, m.tokenVersion))
+                      : m.kioskPath
+                  }
+                  prefetch={false}
+                  target="_blank"
                   className="text-[13px] font-medium text-[var(--cd-accent)]"
                 >
                   Abrir kiosco

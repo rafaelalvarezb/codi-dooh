@@ -19,6 +19,8 @@ export type Machine = {
   lastSeenAt?: number;
   orgId?: string | null;
   isDemo?: boolean;
+  /** Kiosk token version (null = legacy kiosk, no proof of play). Server-only use. */
+  tokenVersion?: number | null;
 };
 
 /** A kiosk counts as online if it checked in during the last 5 minutes. */
@@ -86,6 +88,7 @@ function toMachine(row: ScreenRow): Machine {
     lastSeenAt: row.lastSeenAt?.getTime(),
     orgId: row.orgId,
     isDemo: row.isDemo,
+    tokenVersion: row.tokenVersion,
   };
 }
 
