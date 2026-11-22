@@ -38,6 +38,7 @@ export function CodiTerminal({ useCase, onBusyChange }: CodiTerminalProps) {
   useEffect(() => {
     // Reset flow when use case changes (unless mid-payment — parent locks selector).
     if (!busy) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on use case change
       setPhase("idle");
       setQr(null);
       setErrorMessage(null);

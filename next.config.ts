@@ -5,7 +5,21 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  // PGlite ships WASM + data files; load it from node_modules at runtime.
+  serverExternalPackages: ["@electric-sql/pglite"],
+  // PGlite fallback applies ./drizzle migrations at runtime.
+  outputFileTracingIncludes: {
+    "/**": ["./drizzle/**/*"],
+  },
+  async redirects() {
+    return [
+      { source: "/portal", destination: "/admin", permanent: false },
+      { source: "/portal/login", destination: "/entrar", permanent: false },
+    ];
+  },
   turbopack: {
+    // A stray package-lock.json in the home folder confuses root detection.
+    root: process.cwd(),
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],
