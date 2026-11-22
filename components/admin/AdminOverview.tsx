@@ -2,6 +2,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app/Page";
 import { requireViewer } from "@/lib/auth/dal";
 import { listMachines } from "@/lib/machines";
+import { platformTotals } from "@/lib/data/analytics";
+import { formatAirtime, formatCount } from "@/components/analytics/format";
 import { listPayments, paymentStats } from "@/lib/payment-store";
 import { kioskPath, screenToken } from "@/lib/screen-token";
 
@@ -27,10 +29,11 @@ function formatTime(ts?: number): string {
 export async function AdminOverview() {
   await requireViewer("admin");
 
-  const [machines, payments, stats] = await Promise.all([
+  const [machines, payments, stats, platform] = await Promise.all([
     listMachines(),
     listPayments(40),
     paymentStats(),
+    platformTotals(),
   ]);
 
   return (
@@ -42,6 +45,23 @@ export async function AdminOverview() {
       />
 
       <section className="mt-10">
+        <h2 className="text-[18px] font-medium tracking-[-0.02em]">Plataforma</h2>
+        <p className="mt-1 text-[14px] text-[var(--cd-muted)]">
+          Últimos {platform.windowDays} días, todas las organizaciones.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Reproducciones" value={formatCount(platform.plays)} />
+          <Stat label="Tiempo con anuncios" value={formatAirtime(platform.airtimeMs)} />
+          <Stat label="Pagos durante anuncios" value={formatCount(platform.attendedPayments)} />
+          <Stat label="Campañas al aire" value={formatCount(platform.activeCampaigns)} />
+          <Stat label="Pantallas en línea" value={`${platform.screensOnline} de ${platform.screens}`} />
+          <Stat label="Hosts" value={formatCount(platform.hosts)} />
+          <Stat label="Anunciantes" value={formatCount(platform.advertisers)} />
+          <Stat label="Cobros CoDi" value={formatCount(platform.payments)} />
+        </div>
+      </section>
+
+      <section className="mt-12">
         <h2 className="text-[18px] font-medium tracking-[-0.02em]">Resumen</h2>
         <p className="mt-1 text-[14px] text-[var(--cd-muted)]">
           Totales del día y la semana (CoDi).

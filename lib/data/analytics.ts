@@ -42,6 +42,14 @@ function fillDays(keys: string[], rows: Array<{ day: string; n: number }>): DayP
   return keys.map((day) => ({ day, value: map.get(day) ?? 0 }));
 }
 
+/** Drops leading days where every series is zero, keeping at least `min` days. */
+export function trimLeadingEmptyDays(series: DayPoint[][], min = 7): DayPoint[][] {
+  const len = series[0]?.length ?? 0;
+  let first = 0;
+  while (first < len - min && series.every((s) => s[first].value === 0)) first++;
+  return series.map((s) => s.slice(first));
+}
+
 function fillHours(rows: Array<{ hour: number; n: number }>): number[] {
   const out = Array.from({ length: 24 }, () => 0);
   for (const r of rows) if (r.hour >= 0 && r.hour < 24) out[r.hour] = r.n;
@@ -303,7 +311,10 @@ export async function hostAnalytics(ctx: OrgCtx, now = new Date()) {
 
   const playMap = new Map(playsByScreen.map((r) => [r.screenId, Number(r.n)]));
   const payMap = new Map(payByScreen.map((r) => [r.screenId, { n: Number(r.n), amount: r.amount ?? 0 }]));
-  const keys = dayKeysBetween(since, now);
+  const [playsDays, paymentsDays] = trimLeadingEmptyDays([
+    fillDays(dayKeysBetween(since, now), playsByDay.map((r) => ({ day: r.day, n: Number(r.n) }))),
+    fillDays(dayKeysBetween(since, now), payByDay.map((r) => ({ day: r.day, n: Number(r.n) }))),
+  ]);
 
   return {
     windowDays: HOST_WINDOW_DAYS,
@@ -311,8 +322,8 @@ export async function hostAnalytics(ctx: OrgCtx, now = new Date()) {
     airtimeMs: playTotals[0].airtimeMs,
     payments: payByScreen.reduce((acc, r) => acc + Number(r.n), 0),
     paymentsAmountCents: payByScreen.reduce((acc, r) => acc + (r.amount ?? 0), 0),
-    playsByDay: fillDays(keys, playsByDay.map((r) => ({ day: r.day, n: Number(r.n) }))),
-    paymentsByDay: fillDays(keys, payByDay.map((r) => ({ day: r.day, n: Number(r.n) }))),
+    playsByDay: playsDays,
+    paymentsByDay: paymentsDays,
     playsByHour: fillHours(playsByHour.map((r) => ({ hour: Number(r.hour), n: Number(r.n) }))),
     screens: own.map((s) => ({
       id: s.id,

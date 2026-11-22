@@ -15,6 +15,7 @@ import {
   hostAnalytics,
   mxDayKey,
   platformTotals,
+  trimLeadingEmptyDays,
 } from "./analytics";
 
 beforeEach(async () => {
@@ -177,7 +178,9 @@ describe("hostAnalytics", () => {
     expect(h!.screens.find((s) => s.id === screenA)).toMatchObject({ plays: 1, payments: 1, paymentsAmountCents: 4200 });
     expect(h!.screens.some((s) => s.id === otherScreen)).toBe(false);
     expect(h!.ads.map((a) => a.campaignId)).toEqual([campaign.id]);
-    expect(h!.playsByDay).toHaveLength(30);
+    // Leading empty days are trimmed (min 7 days kept).
+    expect(h!.playsByDay).toHaveLength(7);
+    expect(h!.paymentsByDay).toHaveLength(7);
 
     const o = await hostAnalytics(otherHost, NOW);
     expect(o!.paymentsAmountCents).toBe(9900);
@@ -198,6 +201,14 @@ describe("platformTotals", () => {
 });
 
 describe("day helpers", () => {
+  it("trims leading empty days across series together", () => {
+    const mk = (vals: number[]) => vals.map((value, i) => ({ day: `d${i}`, value }));
+    const [a, b] = trimLeadingEmptyDays([mk([0, 0, 0, 1, 0, 0, 0, 0, 0, 2]), mk([0, 0, 3, 0, 0, 0, 0, 0, 0, 0])], 3);
+    expect(a.map((p) => p.day)[0]).toBe("d2");
+    expect(b[0].value).toBe(3);
+    expect(trimLeadingEmptyDays([mk([0, 0, 0, 0])], 3)[0]).toHaveLength(3);
+  });
+
   it("buckets by Mexico City day", () => {
     expect(mxDayKey(new Date("2026-11-20T05:59:00Z"))).toBe("2026-11-19");
     expect(mxDayKey(new Date("2026-11-20T06:00:00Z"))).toBe("2026-11-20");
