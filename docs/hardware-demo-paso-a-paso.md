@@ -92,54 +92,118 @@ No enchufes el eliminador 12V. Solo USB al Mac después.
 
 ### A4. Enciende solo el ESP32 por USB
 1. Conecta el USB-C del ESP32 a tu Mac.
-2. Debe encender un LED en el ESP32; el relé también puede mostrar un LED de power.
+2. **Éxito mínimo:** LED rojo (u otro) en el ESP32 encendido.
+3. El relé **puede no mostrar LED todavía**. En muchos SunFounder el LED de canal solo se enciende al hacer “clic”. No te detengas aquí si el ESP32 ya tiene luz.
 
-Si el relé no enciende nada: revisa que rojo esté en **5V→VCC** y negro en **GND→GND**.
+Si el ESP32 no enciende nada: prueba otro cable USB-C (que sea de datos, no solo carga).
 
 ---
 
 ## Parte B — Software (Arduino) — una sola vez
 
-### B1. Instalar Arduino IDE
-1. Entra a https://www.arduino.cc/en/software  
-2. Descarga la versión para Mac, instálala, ábrela.
+Hazlo en este orden. No te saltes pasos.
 
-### B2. Agregar la placa ESP32
-1. Arduino IDE → **Settings / Preferencias**  
-2. En “Additional boards manager URLs” pega:  
-   `https://espressif.github.io/arduino-esp32/package_esp32_index.json`  
-3. OK.  
-4. Menú **Tools → Board → Boards Manager**  
-5. Busca `esp32` → instala **esp32 by Espressif Systems**.
+### B1. Instalar Arduino IDE (en el Mac)
+1. Abre Safari o Chrome.
+2. Entra a: https://www.arduino.cc/en/software  
+3. Baja **Arduino IDE 2.x para macOS** (Apple Silicon o Intel, según tu Mac).  
+4. Abre el `.dmg` → arrastra **Arduino IDE** a **Aplicaciones**.  
+5. Abre **Aplicaciones → Arduino IDE**.  
+6. Si macOS dice “no se puede abrir”: clic derecho → **Abrir** → Abrir.  
+7. Si pide login de Arduino: puedes crear cuenta gratis o a veces **Skip** / continuar sin cuenta.
 
-### B3. Librería ArduinoJson
-1. Menú **Tools → Manage Libraries**  
-2. Busca `ArduinoJson` → Install (de Benoit Blanchon).
+### B2. Decirle a Arduino que existen placas ESP32
+1. Menú de arriba: **Arduino IDE → Settings…** (en español a veces **Preferencias…**).  
+2. Busca el campo **Additional boards manager URLs**.  
+3. Pega exactamente esto:
 
-### B4. Abrir nuestro programa
-1. En tu proyecto GitHub/carpeta local abre:  
-   `firmware/esp32-relay/bridge.ino`  
-   (o cópialo a Documents/Arduino/codi-bridge/codi-bridge.ino — el archivo y la carpeta deben llamarse igual).
-
-2. Edita solo estas 2 líneas con tu WiFi de casa:
-
-```cpp
-const char* WIFI_SSID = "nombre-exacto-de-tu-wifi";
-const char* WIFI_PASS = "tu-password";
+```
+https://espressif.github.io/arduino-esp32/package_esp32_index.json
 ```
 
-Deja `POLL_URL` como está (`https://codi-dooh.vercel.app/api/relay/events`).
+4. Clic en **OK**.
 
-### B5. Subir el programa al ESP32
-1. Cable USB conectado.
-2. **Tools → Board → ESP32 Arduino → ESP32 Dev Module**
-3. **Tools → Port** → elige el puerto que aparezca (algo como `/dev/cu.usbserial-...` o `usbmodem`)
-4. Botón **Upload** (flecha →).
-5. Si pide “Hold BOOT”: mantén el botón **BOOT** del ESP32 2 segundos y suelta.
-6. Cuando diga “Done uploading”, abre **Tools → Serial Monitor**, velocidad **115200**.
-7. Debes ver puntos `.....` y luego una IP tipo `192.168.x.x`.
+### B3. Instalar el “paquete” ESP32
+1. Menú **Tools → Board → Boards Manager…**  
+   (o el icono de una placita a la izquierda).  
+2. En el buscador escribe: `esp32`  
+3. Encuentra **esp32 by Espressif Systems**.  
+4. Clic en **Install** (tarda varios minutos; espera a que termine al 100%).  
+5. Cierra el Boards Manager.
 
-Si ves `HTTP 200` de vez en cuando, ya está hablando con internet. Bien.
+### B4. Instalar la librería ArduinoJson
+1. Menú **Tools → Manage Libraries…**  
+   (o icono de libros a la izquierda).  
+2. Busca: `ArduinoJson`  
+3. Elige el de **Benoit Blanchon**.  
+4. **Install**.  
+5. Cierra esa ventana.
+
+### B5. Conseguir el archivo del programa
+Necesitas el archivo `bridge.ino` del repo.
+
+**Opción fácil (si ya tienes el proyecto en el Mac):**  
+Abre la carpeta del proyecto → `firmware` → `esp32-relay` → doble clic en **`bridge.ino`**.  
+Arduino debería abrirlo.
+
+**Si no tienes la carpeta a la mano:**  
+1. En GitHub abre el repo `codi-dooh`.  
+2. Entra a `firmware/esp32-relay/bridge.ino`.  
+3. Clic en el ícono de copiar / Raw → selecciona todo (Cmd+A) → copiar (Cmd+C).  
+4. En Arduino: **File → New Sketch**.  
+5. Borra todo el texto del sketch vacío y pega (Cmd+V).  
+6. **File → Save** → nombre: `codi-bridge` → guarda en Documentos/Arduino.
+
+### B6. Poner tu WiFi (solo 2 líneas)
+En el código busca estas líneas cerca de arriba:
+
+```cpp
+const char* WIFI_SSID = "YOUR_WIFI";
+const char* WIFI_PASS = "YOUR_PASSWORD";
+```
+
+Cámbialas por el nombre y contraseña **exactos** de tu WiFi de casa, entre comillas. Ejemplo:
+
+```cpp
+const char* WIFI_SSID = "Totalplay-1234";
+const char* WIFI_PASS = "miPassword";
+```
+
+- Usa WiFi **2.4 GHz** si tu router tiene las dos bandas (el ESP32 casi nunca ve 5 GHz).  
+- **No** cambies la línea de `POLL_URL` (debe seguir apuntando a `codi-dooh.vercel.app`).
+
+Guarda: **Cmd+S**.
+
+### B7. Elegir placa y puerto
+1. Deja el ESP32 **conectado por USB** al Mac.  
+2. Menú **Tools → Board → esp32 → ESP32 Dev Module**.  
+3. Menú **Tools → Port** → elige algo como:  
+   - `/dev/cu.usbserial-...` o  
+   - `/dev/cu.SLAB_USBtoUART` o  
+   - `/dev/cu.usbmodem...`  
+4. Si **Port** está gris / vacío:  
+   - prueba otro cable USB-C  
+   - desconecta y vuelve a conectar  
+   - en Mac nuevos a veces pide “Permitir accesorio”; acepta.
+
+### B8. Subir el programa (Upload)
+1. Clic en el botón **→** (Upload) arriba.  
+2. Abajo verás texto compilando (“Compiling…”). Espera.  
+3. Si se queda en “Connecting…” o falla el upload:  
+   - mantén oprimido el botón **BOOT** del ESP32  
+   - vuelve a dar Upload  
+   - suelta BOOT cuando empiece a subir (“Writing…”).  
+4. Éxito = mensaje tipo **Done uploading**.
+
+### B9. Ver si conectó al WiFi (Serial Monitor)
+1. Menú **Tools → Serial Monitor**.  
+2. Abajo a la derecha pon velocidad **115200 baud**.  
+3. Si no sale nada: presiona el botón **EN** del ESP32 una vez (reset).  
+4. Debes ver algo como:
+   - `WiFi.....`  
+   - luego una IP: `192.168.x.x`  
+
+Cuando veas la IP, la Parte B terminó. Avísale a Cursor / sigue a Parte C.
 
 ---
 
