@@ -40,25 +40,32 @@ No uses todavía: los otros ESP32, el resto de Dupont, ni nada de Amazon extra.
 
 ## Parte A — Solo “clic” del relé (sin chapa, sin 12V)
 
-Tu placa ELEGOO **no dice “GPIO26”**: dice **D26**.  
-Tampoco busques “5B”: es **5V** (a veces se lee mal en la foto).
+Tu placa ELEGOO **no imprime “5V” ni “GPIO26”**. Imprime:
+
+- **`VIN`** (a veces se lee como `VN`) = el de 5 V para el relé  
+- **`D26`** = GPIO 26  
+
+Hay **dos** cosas que se parecen a “VN”: una a la **izquierda** (junto al USB) y otra a la **derecha** (junto a `VP`).  
+Para el cable rojo usa **solo la de la izquierda**, la que está entre `EN` y `GND`.
 
 ### A1. ESP32 — ubica los 3 pines (USB-C a la izquierda)
 
-Mira la **fila de arriba** (la que está del lado del botón **EN**), de izquierda a derecha:
+Mira la **fila de arriba** (lado del botón **EN**), de izquierda a derecha:
 
-1. `EN`  
-2. **`5V`** ← aquí va el Dupont **rojo**  
-3. **`GND`** ← aquí va el Dupont **negro**  
-4. `D13`  
-5. `D12`  
-6. `D14`  
-7. `D27`  
-8. **`D26`** ← aquí va el Dupont **amarillo/café** (esto es GPIO 26)
+Con el USB-C a la **izquierda**, fila de **arriba**:
 
-Truco: cuenta **ocho pines** desde la izquierda en esa fila de arriba; el octavo es **D26**.
+1. **`VIN`** ← Dupont **rojo** (primer pin arriba, junto al botón EN / USB)  
+2. **`GND`** ← Dupont **negro**  
+3. `D13`  
+4. `D12`  
+5. `D14`  
+6. `D27`  
+7. **`D26`** ← Dupont **amarillo/café**  
+8. luego `D25`, `D33`, … y al final `VN` / `VP` / `EN` ← **no uses ese `VN` del final**
 
-(Si en tu unidad el segundo pin dice `VIN` en vez de `5V`, úsalo igual: con el USB conectado entrega ~5 V al relé.)
+Resumen visual: `VIN` → `GND` → … → `D27` → **`D26`**.
+
+No uses `3V3` (abajo) para este relé. El SunFounder quiere ~5 V vía **`VIN`**.
 
 ### A2. Relé SunFounder — ya los encontraste bien
 
@@ -76,12 +83,12 @@ Lado de tornillos grandes: **todavía no conectes nada** (eso es para la chapa d
 
 | Cable | Enchufa en ESP32 | Enchufa en relé |
 |-------|------------------|-----------------|
-| **Rojo** | pin **`5V`** (2º arriba, junto a EN) | pin **`VCC`** (el de la orilla derecha) |
-| **Negro** | pin **`GND`** (3º arriba, junto a 5V) | pin **`GND`** (el de la orilla izquierda) |
-| **Amarillo/café** | pin **`D26`** (8º arriba) | pin **`IN1`** |
+| **Rojo** | **`VIN`** (2º arriba: EN → **VIN** → GND) | **`VCC`** |
+| **Negro** | **`GND`** (3º arriba, junto a VIN) | **`GND`** |
+| **Amarillo/café** | **`D26`** (después de D27 en la fila de arriba) | **`IN1`** |
 
-Orden sugerido: primero negro (GND), luego rojo (5V), luego amarillo (IN1).  
-No enchufes el eliminador 12V. Solo USB después.
+Orden: primero **negro**, luego **rojo**, luego **amarillo**.  
+No enchufes el eliminador 12V. Solo USB al Mac después.
 
 ### A4. Enciende solo el ESP32 por USB
 1. Conecta el USB-C del ESP32 a tu Mac.
