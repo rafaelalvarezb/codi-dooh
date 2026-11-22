@@ -1,5 +1,8 @@
 # ESP32 relay bridge (demo chapa / baño)
 
+**Guía no técnica paso a paso (caja por caja + videos):**  
+[`docs/hardware-demo-paso-a-paso.md`](../../docs/hardware-demo-paso-a-paso.md)
+
 Cuando llegue el kit (ESP32 + módulo relé 5V + Dupont + opcional chapa
 solenoide 12V + eliminador 12V 1A):
 
