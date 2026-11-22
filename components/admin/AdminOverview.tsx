@@ -3,6 +3,8 @@ import { Card, PageHeader, Section, Stat } from "@/components/app/Page";
 import { ScreenStatus } from "@/components/analytics/HostDashboard";
 import { formatAirtime, formatCount } from "@/components/analytics/format";
 import { SeedButton } from "@/components/admin/AdminActions";
+import { DemoFilterToggle } from "@/components/admin/DemoFilterToggle";
+import { hideDemo } from "@/lib/demo-filter";
 import { monthName } from "@/components/host/IncomeViews";
 import { requireViewer } from "@/lib/auth/dal";
 import { platformRevenue } from "@/lib/data/admin";
@@ -36,21 +38,29 @@ function pct(bps: number) {
 export async function AdminOverview() {
   await requireViewer("admin");
   const now = new Date();
+  const hidden = await hideDemo();
+  const includeDemo = !hidden;
 
-  const [machines, payments, stats, platform, revenue] = await Promise.all([
+  const [allMachines, payments, stats, platform, revenue] = await Promise.all([
     listMachines(),
-    listPayments(25),
-    paymentStats(),
-    platformTotals(now),
-    platformRevenue(now),
+    listPayments(25, { includeDemo }),
+    paymentStats({ includeDemo }),
+    platformTotals(now, { includeDemo }),
+    platformRevenue(now, { includeDemo }),
   ]);
+  const machines = hidden ? allMachines.filter((m) => !m.isDemo) : allMachines;
   const cur = revenue.current;
-  const machineName = new Map(machines.map((m) => [m.id, m.name]));
+  const machineName = new Map(allMachines.map((m) => [m.id, m.name]));
   const month = revenue.months[revenue.months.length - 1];
 
   return (
     <main>
-      <PageHeader eyebrow="Admin" title="Resumen" description="Dinero, actividad y kioscos de toda la plataforma." />
+      <PageHeader
+        eyebrow="Admin"
+        title="Resumen"
+        description={hidden ? "Dinero, actividad y kioscos reales, sin datos de demo." : "Dinero, actividad y kioscos de toda la plataforma, incluidos los datos de demo."}
+        actions={<DemoFilterToggle hidden={hidden} />}
+      />
 
       <Section title="Dinero" description={`Lo que va de ${monthName(month.year, month.month)}. Cada campaña suma día por día mientras corre.`}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

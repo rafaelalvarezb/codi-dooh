@@ -5,6 +5,8 @@ import { Thumb } from "@/components/campaigns/CampaignWizard";
 import { CreativeModeration } from "@/components/admin/AdminActions";
 import { requireViewer } from "@/lib/auth/dal";
 import { listAllCreatives } from "@/lib/data/admin";
+import { DemoFilterToggle } from "@/components/admin/DemoFilterToggle";
+import { hideDemo } from "@/lib/demo-filter";
 
 export const metadata: Metadata = { title: "Videos · Admin · CODI·DOOH", robots: { index: false } };
 
@@ -20,12 +22,14 @@ function seconds(ms: number) {
 
 export default async function Page() {
   await requireViewer("admin", "/admin/creativos");
-  const items = await listAllCreatives();
+  const hidden = await hideDemo();
+  const items = await listAllCreatives({ includeDemo: !hidden });
   return (
     <main>
       <PageHeader
         eyebrow="Admin"
         title="Videos"
+        actions={<DemoFilterToggle hidden={hidden} />}
         description="Todo video se publica al instante. Si pausas o rechazas uno, sale de todos los kioscos en alrededor de un minuto, en cuanto termine el video que esté pasando. El anunciante ve el motivo."
       />
       <div className="mt-8">

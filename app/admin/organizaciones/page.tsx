@@ -4,6 +4,8 @@ import { DemoBadge } from "@/components/app/DemoBadge";
 import { DeleteOrgButton, OperateAsButton } from "@/components/admin/AdminActions";
 import { requireViewer } from "@/lib/auth/dal";
 import { listOrgs } from "@/lib/data/admin";
+import { DemoFilterToggle } from "@/components/admin/DemoFilterToggle";
+import { hideDemo } from "@/lib/demo-filter";
 
 export const metadata: Metadata = { title: "Organizaciones · Admin · CODI·DOOH", robots: { index: false } };
 
@@ -15,12 +17,14 @@ function plural(n: number, one: string, many: string) {
 
 export default async function Page() {
   const viewer = await requireViewer("admin", "/admin/organizaciones");
-  const orgs = await listOrgs();
+  const hidden = await hideDemo();
+  const orgs = await listOrgs({ includeDemo: !hidden });
   return (
     <main>
       <PageHeader
         eyebrow="Admin"
         title="Organizaciones"
+        actions={<DemoFilterToggle hidden={hidden} />}
         description="“Operar como” te deja ver y hacer todo lo que haría esa cuenta. Para regresar, usa “Volver a admin”."
       />
       <Card className="mt-8 overflow-hidden">

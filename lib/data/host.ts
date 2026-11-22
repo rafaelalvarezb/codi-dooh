@@ -162,7 +162,7 @@ export async function updateScreen(ctx: OrgCtx, id: string, patch: { name?: stri
 // ---------------------------------------------------------------------------
 
 /** Every campaign booking on the given screens (any advertiser). */
-export async function bookingsOnScreens(screenIds: string[]): Promise<Booking[]> {
+export async function bookingsOnScreens(screenIds: string[]): Promise<Array<Booking & { isDemo: boolean }>> {
   if (screenIds.length === 0) return [];
   const db = await getDb();
   const rows = await db
@@ -173,6 +173,7 @@ export async function bookingsOnScreens(screenIds: string[]): Promise<Booking[]>
       startsAt: campaigns.startsAt,
       endsAt: campaigns.endsAt,
       status: campaigns.status,
+      isDemo: campaigns.isDemo,
       screenId: campaignScreens.screenId,
       spots: campaignScreens.spots,
     })

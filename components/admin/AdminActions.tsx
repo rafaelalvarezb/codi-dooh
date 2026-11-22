@@ -300,7 +300,9 @@ export function SeedButton() {
     const res = await call("/api/admin/seed", "POST");
     setBusy(false);
     if (res.error) return setMsg(res.error);
-    setMsg(res.data.skipped ? "Los datos de demo ya estaban cargados." : "Datos de demo cargados.");
+    const plays = Number(res.data.plays ?? 0);
+    const pays = Number(res.data.payments ?? 0);
+    setMsg(`Listo: últimas 2 semanas de demo con ${plays.toLocaleString("es-MX")} reproducciones y ${pays.toLocaleString("es-MX")} cobros.`);
     router.refresh();
   }
   return (

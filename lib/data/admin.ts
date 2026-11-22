@@ -55,7 +55,7 @@ export async function setCreativeStatus(id: string, status: "active" | "paused" 
 // Campaigns
 // ---------------------------------------------------------------------------
 
-export async function listAllCampaigns(now = new Date()) {
+export async function listAllCampaigns(now = new Date(), opts: { includeDemo?: boolean } = {}) {
   const db = await getDb();
   const rows = await db
     .select({
@@ -69,6 +69,7 @@ export async function listAllCampaigns(now = new Date()) {
     .from(campaigns)
     .innerJoin(organizations, eq(organizations.id, campaigns.orgId))
     .innerJoin(creatives, eq(creatives.id, campaigns.creativeId))
+    .where(opts.includeDemo === false ? eq(campaigns.isDemo, false) : undefined)
     .orderBy(desc(campaigns.createdAt));
   const ids = rows.map((r) => r.campaign.id);
   const targets = ids.length
@@ -118,7 +119,7 @@ export async function setCampaignStatusAsAdmin(id: string, status: "active" | "p
 // Organizations
 // ---------------------------------------------------------------------------
 
-export async function listOrgs() {
+export async function listOrgs(opts: { includeDemo?: boolean } = {}) {
   const db = await getDb();
   // Explicit aliases: on single-table selects Drizzle renders columns unqualified,
   // which would be ambiguous inside these correlated subqueries.
@@ -139,6 +140,7 @@ export async function listOrgs() {
       )`,
     })
     .from(organizations)
+    .where(opts.includeDemo === false ? eq(organizations.isDemo, false) : undefined)
     .orderBy(desc(organizations.createdAt));
 }
 
@@ -175,10 +177,11 @@ export async function deleteOrg(id: string, confirmName: string) {
 // Money
 // ---------------------------------------------------------------------------
 
-export async function platformRevenue(now = new Date()) {
+export async function platformRevenue(now = new Date(), opts: { includeDemo?: boolean } = {}) {
   const db = await getDb();
   const hostScreens = await db.select({ id: screens.id }).from(screens).where(isNotNull(screens.orgId));
-  const [bookings, settings] = await Promise.all([bookingsOnScreens(hostScreens.map((s) => s.id)), getSettings()]);
+  const [all, settings] = await Promise.all([bookingsOnScreens(hostScreens.map((s) => s.id)), getSettings()]);
+  const bookings = opts.includeDemo === false ? all.filter((b) => !b.isDemo) : all;
   const months = recentMonths(now, 3).map((m) => ({ year: m.year, month: m.month, ...periodRevenue(bookings, m, settings.commissionBps, now) }));
   const current = months[months.length - 1];
   return {

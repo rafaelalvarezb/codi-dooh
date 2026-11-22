@@ -6,6 +6,8 @@ import { StatePill } from "@/components/campaigns/CampaignViews";
 import { CampaignAdminControls } from "@/components/admin/AdminActions";
 import { requireViewer } from "@/lib/auth/dal";
 import { listAllCampaigns } from "@/lib/data/admin";
+import { DemoFilterToggle } from "@/components/admin/DemoFilterToggle";
+import { hideDemo } from "@/lib/demo-filter";
 import { formatMxn } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Campañas · Admin · CODI·DOOH", robots: { index: false } };
@@ -18,12 +20,14 @@ const BILLING = { paid: "Pagada", pilot: "Piloto", house: "Propia del host" } as
 
 export default async function Page() {
   await requireViewer("admin", "/admin/campanas");
-  const items = await listAllCampaigns();
+  const hidden = await hideDemo();
+  const items = await listAllCampaigns(new Date(), { includeDemo: !hidden });
   return (
     <main>
       <PageHeader
         eyebrow="Admin"
         title="Campañas"
+        actions={<DemoFilterToggle hidden={hidden} />}
         description="Marca una campaña como piloto para que no se le cobre al anunciante. Su valor de mercado se sigue mostrando."
       />
       <div className="mt-8">

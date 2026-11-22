@@ -347,40 +347,49 @@ export async function hostAnalytics(ctx: OrgCtx, now = new Date()) {
 // Platform admin (global, no org scope — only call behind an admin check)
 // ---------------------------------------------------------------------------
 
-export async function platformTotals(now = new Date()) {
+export async function platformTotals(now = new Date(), opts: { includeDemo?: boolean } = {}) {
   const db = await getDb();
+  const real = opts.includeDemo === false;
   const since = new Date(now.getTime() - (HOST_WINDOW_DAYS - 1) * DAY_MS);
   const [[p], [pay], [att], [orgs], [cmp], [scr]] = await Promise.all([
     db
       .select({ plays: count(), airtimeMs: airtimeExpr.mapWith(Number) })
       .from(plays)
-      .where(gte(plays.startedAt, since)),
+      .where(and(gte(plays.startedAt, since), real ? eq(plays.isDemo, false) : undefined)),
     db
       .select({ n: count(), amount: sql<number>`coalesce(sum(${payments.amountCents}), 0)`.mapWith(Number) })
       .from(payments)
-      .where(and(eq(payments.status, "PAID"), gte(payments.paidAt, since))),
+      .where(and(eq(payments.status, "PAID"), gte(payments.paidAt, since), real ? eq(payments.isDemo, false) : undefined)),
     db
       .select({ n: countDistinct(payments.qrId) })
       .from(plays)
       .innerJoin(payments, attentionJoin)
-      .where(and(isNotNull(plays.campaignId), gte(plays.startedAt, since))),
+      .where(and(isNotNull(plays.campaignId), gte(plays.startedAt, since), real ? eq(plays.isDemo, false) : undefined)),
     db
       .select({
         hosts: sql<number>`count(*) filter (where ${organizations.kind} in ('host','both'))`.mapWith(Number),
         advertisers: sql<number>`count(*) filter (where ${organizations.kind} in ('advertiser','both'))`.mapWith(Number),
       })
-      .from(organizations),
+      .from(organizations)
+      .where(real ? eq(organizations.isDemo, false) : undefined),
     db
       .select({ n: count() })
       .from(campaigns)
-      .where(and(eq(campaigns.status, "active"), lte(campaigns.startsAt, now), gte(campaigns.endsAt, now))),
+      .where(
+        and(
+          eq(campaigns.status, "active"),
+          lte(campaigns.startsAt, now),
+          gte(campaigns.endsAt, now),
+          real ? eq(campaigns.isDemo, false) : undefined,
+        ),
+      ),
     db
       .select({
         total: count(),
         online: sql<number>`count(*) filter (where ${screens.lastSeenAt} > ${new Date(now.getTime() - 5 * 60_000)})`.mapWith(Number),
       })
       .from(screens)
-      .where(isNotNull(screens.orgId)),
+      .where(and(isNotNull(screens.orgId), real ? eq(screens.isDemo, false) : undefined)),
   ]);
   return {
     windowDays: HOST_WINDOW_DAYS,
