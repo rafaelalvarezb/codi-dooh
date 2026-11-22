@@ -10,7 +10,8 @@ interface DoohPlayerProps {
 }
 
 /**
- * DOOH surface — videos fill the entire left column (object-cover).
+ * DOOH surface — full creative visible (object-contain).
+ * Prefer contain over cover so bumper text/logos are not cropped.
  * Playlist always runs so ads monetize idle + checkout time.
  */
 export function DoohPlayer(_props: DoohPlayerProps) {
@@ -56,7 +57,7 @@ export function DoohPlayer(_props: DoohPlayerProps) {
         <video
           key={creative.id}
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover bg-black"
+          className="absolute inset-0 h-full w-full object-contain bg-black"
           src={creative.src}
           muted
           playsInline

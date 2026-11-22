@@ -40,37 +40,54 @@ No uses todavía: los otros ESP32, el resto de Dupont, ni nada de Amazon extra.
 
 ## Parte A — Solo “clic” del relé (sin chapa, sin 12V)
 
-### A1. Identifica pines en el ESP32
-En el ESP32 busca letras impresas al borde:
+Tu placa ELEGOO **no dice “GPIO26”**: dice **D26**.  
+Tampoco busques “5B”: es **5V** (a veces se lee mal en la foto).
 
-- Un pin que diga **5V** (a veces `V5` / `5V`)
-- Un pin que diga **GND**
-- El pin que diga **D26** o **GPIO26** (si no ves 26, busca la numeración; muchos boards ELEGOO lo marcan `26`)
+### A1. ESP32 — ubica los 3 pines (USB-C a la izquierda)
 
-### A2. Identifica pines en el relé (canal 1)
-En el módulo de 4 canales:
+Mira la **fila de arriba** (la que está del lado del botón **EN**), de izquierda a derecha:
 
-- Fila de pines chicos (Dupont): **VCC**, **GND**, **IN1**, IN2, IN3, IN4  
-  Solo usamos **VCC**, **GND**, **IN1**.
-- Lado de tornillos grandes del canal 1: **NO**, **COM**, **NC**  
-  (Normally Open / Common / Normally Closed).  
-  Para la chapa usaremos **NO** y **COM**. Por ahora **no connects nada** ahí.
+1. `EN`  
+2. **`5V`** ← aquí va el Dupont **rojo**  
+3. **`GND`** ← aquí va el Dupont **negro**  
+4. `D13`  
+5. `D12`  
+6. `D14`  
+7. `D27`  
+8. **`D26`** ← aquí va el Dupont **amarillo/café** (esto es GPIO 26)
 
-### A3. Conecta 3 Dupont (ESP32 → relé)
+Truco: cuenta **ocho pines** desde la izquierda en esa fila de arriba; el octavo es **D26**.
 
-| Cable | Del ESP32 | Al relé |
-|-------|-----------|---------|
-| Rojo | **5V** | **VCC** |
-| Negro | **GND** | **GND** |
-| Amarillo | **GPIO 26** | **IN1** |
+(Si en tu unidad el segundo pin dice `VIN` en vez de `5V`, úsalo igual: con el USB conectado entrega ~5 V al relé.)
 
-Apaga todo. No enchufes el eliminador 12V todavía.
+### A2. Relé SunFounder — ya los encontraste bien
+
+Fila de pines chicos (abajo a la derecha en tu foto):
+
+`GND` · `IN1` · `IN2` · `IN3` · `IN4` · `VCC`
+
+Solo usamos **GND**, **IN1**, **VCC**.
+
+Deja el **jumper amarillo** puesto entre `JD-VCC` y `VCC` (como viene). No lo quites.
+
+Lado de tornillos grandes: **todavía no conectes nada** (eso es para la chapa después).
+
+### A3. Conecta los 3 Dupont (hembra–hembra, como los tuyos)
+
+| Cable | Enchufa en ESP32 | Enchufa en relé |
+|-------|------------------|-----------------|
+| **Rojo** | pin **`5V`** (2º arriba, junto a EN) | pin **`VCC`** (el de la orilla derecha) |
+| **Negro** | pin **`GND`** (3º arriba, junto a 5V) | pin **`GND`** (el de la orilla izquierda) |
+| **Amarillo/café** | pin **`D26`** (8º arriba) | pin **`IN1`** |
+
+Orden sugerido: primero negro (GND), luego rojo (5V), luego amarillo (IN1).  
+No enchufes el eliminador 12V. Solo USB después.
 
 ### A4. Enciende solo el ESP32 por USB
 1. Conecta el USB-C del ESP32 a tu Mac.
-2. Debe encender un LED en el ESP32 y/o en el relé.
+2. Debe encender un LED en el ESP32; el relé también puede mostrar un LED de power.
 
-Si el relé no enciende nada: revisa VCC y GND.
+Si el relé no enciende nada: revisa que rojo esté en **5V→VCC** y negro en **GND→GND**.
 
 ---
 
