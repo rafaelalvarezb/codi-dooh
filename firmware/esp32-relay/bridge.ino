@@ -57,7 +57,7 @@ void loop() {
   int code = http.GET();
   if (code == 200) {
     String body = http.getString();
-    StaticJsonDocument<512> doc;
+    JsonDocument doc;
     DeserializationError err = deserializeJson(doc, body);
     if (!err) {
       bool pending = doc["pending"] | false;
