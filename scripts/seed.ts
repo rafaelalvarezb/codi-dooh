@@ -6,7 +6,7 @@ import { seedDemo } from "@/lib/seed";
 
 seedDemo()
   .then((r) => {
-    console.info(`[seed] demo data ready (${r.screens} demo screens).`);
+    console.info(`[seed] demo data ready (${r.screens} demo screens, ${r.skipped ? "history already present" : `${r.plays} plays and ${r.payments} payments added`}).`);
     process.exit(0);
   })
   .catch((error) => {

@@ -6,7 +6,7 @@
  * platform admin can "operate as" them from /admin.
  */
 import { randomBytes } from "node:crypto";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   campaignScreens,
@@ -14,6 +14,8 @@ import {
   creatives,
   memberships,
   organizations,
+  payments,
+  plays,
   screens,
   sites,
   users,
@@ -151,9 +153,107 @@ export async function seedDemo(now = new Date()) {
     .values(DEMO.screens.map((s) => ({ campaignId: DEMO.campaign, screenId: s.id, spots: 2 })))
     .onConflictDoNothing();
 
+  const history = await seedDemoHistory(now);
+
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)`.mapWith(Number) })
     .from(screens)
     .where(sql`${screens.isDemo} = true`);
-  return { screens: count };
+  return { screens: count, ...history };
+}
+
+/** Deterministic PRNG so every seed run produces the same shape. */
+function prng(seed: number) {
+  let s = seed % 2147483647 || 1;
+  return () => (s = (s * 48271) % 2147483647) / 2147483647;
+}
+
+// Mexico City has no daylight saving time since 2022: UTC-6 all year.
+const MX_OFFSET_MS = -6 * 3_600_000;
+const HISTORY_DAYS = 14;
+const OPEN_HOUR = 7;
+const CLOSE_HOUR = 23;
+
+/** Relative traffic at a parking exit by hour (lunch and after-work peaks). */
+function traffic(hour: number) {
+  const lunch = Math.exp(-((hour - 14) ** 2) / 4);
+  const evening = Math.exp(-((hour - 19) ** 2) / 3);
+  return 0.25 + 0.75 * Math.max(lunch, evening * 1.1);
+}
+
+/**
+ * Two weeks of plays and CoDi payments on the demo screens, so dashboards
+ * have something to show. Only runs once: skipped if demo plays exist.
+ */
+export async function seedDemoHistory(now = new Date()) {
+  const db = await getDb();
+  const [existing] = await db
+    .select({ n: sql<number>`count(*)`.mapWith(Number) })
+    .from(plays)
+    .where(and(eq(plays.campaignId, DEMO.campaign), eq(plays.isDemo, true)));
+  if (existing.n > 0) return { plays: 0, payments: 0, skipped: true };
+
+  const playRows: Array<typeof plays.$inferInsert> = [];
+  const paymentRows: Array<typeof payments.$inferInsert> = [];
+  const mxNow = now.getTime() + MX_OFFSET_MS;
+  const todayMx = Math.floor(mxNow / DAY) * DAY; // midnight "today" as MX wall clock
+
+  DEMO.screens.forEach((screen, si) => {
+    const rnd = prng(1000 + si * 7919);
+    const screenFactor = [1, 0.8, 0.55][si] ?? 0.6;
+    for (let d = HISTORY_DAYS - 1; d >= 0; d--) {
+      const dayStartMx = todayMx - d * DAY;
+      const weekday = new Date(dayStartMx).getUTCDay();
+      const dayFactor = weekday === 0 ? 0.6 : weekday === 6 ? 0.85 : 1;
+      for (let hour = OPEN_HOUR; hour < CLOSE_HOUR; hour++) {
+        const hourStart = dayStartMx + hour * 3_600_000 - MX_OFFSET_MS; // back to UTC
+        const load = traffic(hour) * dayFactor * screenFactor;
+
+        // Plays: the spot gets 2 of the loop's slots; spread evenly with jitter.
+        const nPlays = Math.round(18 * (0.6 + 0.4 * load) + rnd() * 4);
+        const slot = 3_600_000 / nPlays;
+        for (let i = 0; i < nPlays; i++) {
+          const start = Math.round(hourStart + i * slot + rnd() * (slot - 7000));
+          if (start + 6000 > now.getTime()) continue;
+          playRows.push({
+            id: `ply_demo_${si}_${start}`,
+            screenId: screen.id,
+            creativeId: DEMO.creative,
+            campaignId: DEMO.campaign,
+            startedAt: new Date(start),
+            endedAt: new Date(start + 6000),
+            isDemo: true,
+          });
+        }
+
+        // Payments: cars leaving and paying with CoDi at the exit kiosk.
+        const nPay = Math.round(9 * load * (0.7 + rnd() * 0.6));
+        for (let i = 0; i < nPay; i++) {
+          const created = Math.round(hourStart + rnd() * (3_600_000 - 120_000));
+          const paid = created + Math.round(25_000 + rnd() * 70_000);
+          if (paid > now.getTime()) continue;
+          paymentRows.push({
+            qrId: `demo_${si}_${created}`,
+            machineId: screen.id,
+            status: "PAID",
+            amountCents: (25 + Math.floor(rnd() * 8) * 5) * 100,
+            transactionId: `demo-tx-${si}-${created}`,
+            concept: "Estacionamiento Plaza Centro",
+            createdAt: new Date(created),
+            paidAt: new Date(paid),
+            updatedAt: new Date(paid),
+            isDemo: true,
+          });
+        }
+      }
+    }
+  });
+
+  for (let i = 0; i < playRows.length; i += 1000) {
+    await db.insert(plays).values(playRows.slice(i, i + 1000)).onConflictDoNothing();
+  }
+  for (let i = 0; i < paymentRows.length; i += 1000) {
+    await db.insert(payments).values(paymentRows.slice(i, i + 1000)).onConflictDoNothing();
+  }
+  return { plays: playRows.length, payments: paymentRows.length, skipped: false };
 }
