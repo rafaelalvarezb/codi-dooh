@@ -7,7 +7,9 @@ import { CampaignWizard } from "@/components/campaigns/CampaignWizard";
 import { PauseToggle } from "@/components/campaigns/CampaignActions";
 import { StatePill } from "@/components/campaigns/CampaignViews";
 import { KioskPreview } from "@/components/dooh/KioskPreview";
+import { CampaignResults } from "@/components/analytics/CampaignResults";
 import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
+import { campaignAnalytics } from "@/lib/data/analytics";
 import { campaignState, getCampaign } from "@/lib/data/campaigns";
 import { NotFoundError } from "@/lib/data/context";
 import { listCreatives } from "@/lib/data/creatives";
@@ -81,17 +83,18 @@ export async function CampaignDetailView({
   mode,
   id,
   justPublished,
-  children,
 }: {
   mode: Mode;
   id: string;
   justPublished: boolean;
-  children?: React.ReactNode;
 }) {
   const viewer = await requireOrgViewer(AREA[mode], `${BASE[mode]}/${id}`);
+  const ctx = orgCtx(viewer);
+  const now = new Date();
   let campaign;
+  let analytics;
   try {
-    campaign = await getCampaign(orgCtx(viewer), id);
+    [campaign, analytics] = await Promise.all([getCampaign(ctx, id), campaignAnalytics(ctx, id, now)]);
   } catch (error) {
     if (error instanceof NotFoundError) notFound();
     throw error;
@@ -140,14 +143,7 @@ export async function CampaignDetailView({
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
-          {children ?? (
-            <Card className="px-6 py-10 text-center">
-              <p className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Aquí verás tus resultados</p>
-              <p className="mx-auto mt-2 max-w-md text-[length:var(--cd-body)] text-[var(--cd-muted)]">
-                Reproducciones, minutos en pantalla y pagos hechos mientras corría tu anuncio.
-              </p>
-            </Card>
-          )}
+          <CampaignResults a={analytics} now={now} />
         </div>
         <aside className="space-y-4">
           <KioskPreview
