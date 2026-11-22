@@ -33,7 +33,7 @@ export function StatePill({ state }: { state: ReturnType<typeof campaignState> }
 }
 
 function shortDate(d: Date) {
-  return d.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+  return d.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "short" });
 }
 
 export function CampaignList({

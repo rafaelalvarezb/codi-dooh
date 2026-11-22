@@ -76,7 +76,7 @@ export async function NewCampaignView({ mode }: { mode: Mode }) {
 }
 
 function longDate(d: Date) {
-  return d.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "long", year: "numeric" });
 }
 
 export async function CampaignDetailView({

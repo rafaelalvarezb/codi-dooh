@@ -18,6 +18,7 @@ function formatMxn(amount: number): string {
 function formatTime(ts?: number): string {
   if (!ts) return "—";
   return new Date(ts).toLocaleString("es-MX", {
+    timeZone: "America/Mexico_City",
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -185,7 +186,7 @@ function StatusPill({ status }: { status: string }) {
           online ? "bg-[var(--cd-success)]" : "bg-[var(--cd-subtle)]",
         ].join(" ")}
       />
-      {online ? "Online" : status}
+      {online ? "En línea" : status === "offline" ? "Sin conexión" : "Sin conectar aún"}
     </span>
   );
 }
