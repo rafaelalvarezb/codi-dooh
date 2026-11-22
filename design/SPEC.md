@@ -21,6 +21,10 @@ La pantalla no tiene marca del lugar ni de codidooh: la única marca visible es 
 - Grid: `grid-template-columns: minmax(0,1fr) 420px`.
 - Panel: padding 32px arriba, 40px a los lados. Columna flex; el footer se empuja al fondo con un spacer.
 - El anuncio DOOH ocupa todo el área izquierda (`object-cover`), sin letterbox.
+  Excepción: los videos verticales (más altos que anchos) de anunciantes se ven
+  completos al centro, con una imagen fija difuminada del mismo video a los lados
+  (`fitMode: "blur"`, ver `components/dooh/CreativeSurface.tsx`). Así no se corta
+  la mitad del video ni queda una franja negra.
 
 ## Variantes del estado "esperando"
 ### contraste (PRINCIPAL — producción)

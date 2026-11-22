@@ -1,36 +1,61 @@
-# Ads / comisión — roadmap (después del portal ops)
+# Ads / comisión: roadmap
 
-Pitch comercial (copy, no automatizado aún):
+Pitch comercial:
 
-> Instalo CoDi + pantalla; te traigo anunciantes locales; yo me quedo con una
-> comisión de ads; tú ganas CoDi sin comisión + ingreso extra.
+> Instalo CoDi + pantalla; te traigo anunciantes; yo me quedo con una comisión
+> de ads; tú ganas CoDi sin comisión + ingreso extra.
 
-## Fase A — Manual (ahora / post-portal)
+## Fase A: manual (hecha)
 
-- Tú cierras anunciantes locales.
-- Creativos los subes tú al playlist DOOH (`lib/ads.ts` / `public/ads`).
-- El operador ve en el portal solo “ingresos estimados por ads” (métrica
-  manual / placeholder) — no marketplace.
+- Creativos fijos en `public/ads` (`lib/ads.ts`). Siguen siendo el respaldo del
+  kiosco cuando no hay campañas o no hay internet.
 
-## Fase B — Anunciantes locales en portal
+## Fase B: Ads Manager DOOH de autoservicio (hecha en `feat/ads-platform`)
 
-- Operador invita anunciante local → sube creativo → tú o el operador aprueba.
-- Revenue share visible en portal (ej. 70/30 comercio/Handle).
-- Preguntas a cerrar antes de construir B:
-  - ¿Quién factura al anunciante: Handle/codidooh o el comercio?
-  - ¿Split fijo o negociable por plaza?
-  - ¿El operador puede rechazar creativos (competencia, alcohol, etc.)?
-  - ¿10 máquinas = 1 cuenta o multi-sede?
+- **Anunciantes**: registro abierto, subida de video con validación (MP4 H.264,
+  6/10/15 s, ≤ 50 MB, lado corto ≥ 720 px), vista previa exacta del kiosco,
+  elección de pantallas y spots, publicación inmediata, analítica con
+  "pagos durante tu anuncio" (atención verificada con CoDi).
+- **Hosts**: alta en 4 pasos (negocio → CLABE validada → sitio → pantalla), link
+  del kiosco con token y QR, rotación de token, anuncios propios sin costo,
+  ingresos con reparto 70/30 y próximo pago.
+- **Admin**: totales, moderación de videos, piloto vs pagada, precio y comisión,
+  organizaciones con "operar como", filtro "Ocultar demo".
+- **Kiosco**: playlist por pantalla cada 60 s con rotación ponderada, respaldo
+  sin pantalla negra y proof of play firmado.
 
-## Fase C — Programática / DV360
+Decisiones abiertas que quedaron con la opción más simple (ver el PR):
 
-- Huecos sin creativo local se llenan con DV360 / SSP.
-- El DOOH player ya tiene fallback “ANUNCIO PROGRAMÁTICO · DV360” cuando
-  no hay creatividades locales.
+- Quien factura al anunciante: por ahora solo se lleva la cuenta ("por pagar").
+- Split: uno global (30/70 por defecto), configurable por el admin.
+- El host no aprueba creativos; el admin modera después de publicar.
 
-## Orden de negocio
+## Fuera de alcance de la fase B (siguientes pasos)
 
-1. Portal ops (máquinas + transacciones CoDi) ← hecho en v1
-2. Fase A manual
-3. Fase B marketplace local
-4. Fase C DV360
+Explícitamente fuera:
+
+- **Programática / DV360**: llenar huecos sin campañas con DV360 o un SSP. El
+  reproductor ya muestra el placeholder "ANUNCIO PROGRAMÁTICO · DV360".
+- **Subastas** o precio dinámico por pantalla u horario.
+- **Demografía por cámara** (conteo de personas, edad, género).
+- **Pagos reales a hosts y facturación (CFDI)**: hoy solo se calcula lo que se
+  le debe a cada host; el depósito se hace fuera de la plataforma.
+- **Hardware** nuevo (pantallas, players dedicados).
+- **Landing** pública de marketing.
+
+Pendientes identificados durante la construcción:
+
+- **Cobro de campañas con CoDi**: que el anunciante pague su campaña con un QR
+  (`lib/pey.ts`) antes de publicarla. Hoy queda como saldo "por pagar".
+- **Precio por pantalla**: `screens.spot_price_cents` existe pero las campañas
+  usan el precio global vigente al publicar.
+- **Comisión congelada por mes**: si el admin cambia la comisión, se recalculan
+  también los meses anteriores.
+- **Reembolsos**: pausar una campaña no reduce lo que se cobra.
+- **Checkout de máquina expendedora**: hoy usa el flujo de "recarga".
+- **Equipos**: invitar a más personas a una organización, recuperar contraseña,
+  verificar correo.
+- **Seguridad del relevador**: `POST /api/relay/pulse` no pide credenciales
+  (código del módulo de hardware, no se tocó en esta fase).
+- **Mensajes de validación**: los errores de formato raros salen del idioma por
+  defecto de zod; los comunes ya están en español.
