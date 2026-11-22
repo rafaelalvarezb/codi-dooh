@@ -11,14 +11,20 @@ export async function AppShell({ area, children }: { area: Area; children: React
   const kind = viewer.org?.kind;
 
   const nav: NavItem[] = [];
-  if (canHost(kind)) {
+  if (area === "admin") {
+    nav.push({ href: "/admin", label: "Resumen", exact: true });
+    nav.push({ href: "/admin/creativos", label: "Videos" });
+    nav.push({ href: "/admin/campanas", label: "Campañas" });
+    nav.push({ href: "/admin/organizaciones", label: "Organizaciones" });
+    nav.push({ href: "/admin/ajustes", label: "Ajustes" });
+  } else if (canHost(kind)) {
     nav.push({ href: "/host", label: "Resumen", exact: true });
     nav.push({ href: "/host/ingresos", label: "Ingresos" });
     nav.push({ href: "/host/pantallas", label: "Pantallas" });
     nav.push({ href: "/host/campanas", label: "Mis anuncios" });
   }
-  if (canAdvertise(kind)) nav.push({ href: "/anunciantes", label: "Campañas" });
-  if (viewer.isPlatformAdmin) nav.push({ href: "/admin", label: "Admin" });
+  if (area !== "admin" && canAdvertise(kind)) nav.push({ href: "/anunciantes", label: "Campañas" });
+  if (area !== "admin" && viewer.isPlatformAdmin) nav.push({ href: "/admin", label: "Admin" });
 
   return (
     <div className="min-h-dvh bg-[var(--cd-surface)]">

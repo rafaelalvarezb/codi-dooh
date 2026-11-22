@@ -1,18 +1,20 @@
 import Link from "next/link";
-import { PageHeader } from "@/components/app/Page";
-import { requireViewer } from "@/lib/auth/dal";
-import { listMachines } from "@/lib/machines";
-import { platformTotals } from "@/lib/data/analytics";
+import { Card, PageHeader, Section, Stat } from "@/components/app/Page";
+import { ScreenStatus } from "@/components/analytics/HostDashboard";
 import { formatAirtime, formatCount } from "@/components/analytics/format";
+import { SeedButton } from "@/components/admin/AdminActions";
+import { monthName } from "@/components/host/IncomeViews";
+import { requireViewer } from "@/lib/auth/dal";
+import { platformRevenue } from "@/lib/data/admin";
+import { platformTotals } from "@/lib/data/analytics";
+import { listMachines } from "@/lib/machines";
 import { listPayments, paymentStats } from "@/lib/payment-store";
+import { formatMxn } from "@/lib/pricing";
 import { kioskPath, screenToken } from "@/lib/screen-token";
 
-function formatMxn(amount: number): string {
-  return amount.toLocaleString("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
-  });
+/** Payments store amounts in pesos (legacy shape); format them as MXN. */
+function pesos(amount: number): string {
+  return formatMxn(Math.round(amount * 100));
 }
 
 function formatTime(ts?: number): string {
@@ -26,31 +28,41 @@ function formatTime(ts?: number): string {
   });
 }
 
-/** Platform overview (was /portal): machines, CoDi payments and totals. */
+function pct(bps: number) {
+  return `${(bps / 100).toLocaleString("es-MX", { maximumFractionDigits: 1 })}%`;
+}
+
+/** Platform overview: money, activity, kiosks and recent CoDi payments. */
 export async function AdminOverview() {
   await requireViewer("admin");
+  const now = new Date();
 
-  const [machines, payments, stats, platform] = await Promise.all([
+  const [machines, payments, stats, platform, revenue] = await Promise.all([
     listMachines(),
-    listPayments(40),
+    listPayments(25),
     paymentStats(),
-    platformTotals(),
+    platformTotals(now),
+    platformRevenue(now),
   ]);
+  const cur = revenue.current;
+  const machineName = new Map(machines.map((m) => [m.id, m.name]));
+  const month = revenue.months[revenue.months.length - 1];
 
   return (
     <main>
-      <PageHeader
-        eyebrow="Admin"
-        title="Operación"
-        description="Máquinas, cobros CoDi y totales de la plataforma."
-      />
+      <PageHeader eyebrow="Admin" title="Resumen" description="Dinero, actividad y kioscos de toda la plataforma." />
 
-      <section className="mt-10">
-        <h2 className="text-[18px] font-medium tracking-[-0.02em]">Plataforma</h2>
-        <p className="mt-1 text-[14px] text-[var(--cd-muted)]">
-          Últimos {platform.windowDays} días, todas las organizaciones.
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <Section title="Dinero" description={`Lo que va de ${monthName(month.year, month.month)}. Cada campaña suma día por día mientras corre.`}>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat label="Anuncios vendidos" value={formatMxn(cur.grossCents)} hint="Campañas pagadas" />
+          <Stat label={`Comisión plataforma (${pct(revenue.commissionBps)})`} value={formatMxn(cur.platformCents)} />
+          <Stat label="Para hosts" value={formatMxn(cur.hostCents)} />
+          <Stat label="Valor de pilotos" value={formatMxn(cur.pilotValueCents)} hint="Subsidiado, sin ingreso" />
+        </div>
+      </Section>
+
+      <Section title="Actividad" description={`Últimos ${platform.windowDays} días, todas las organizaciones.`}>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Reproducciones" value={formatCount(platform.plays)} />
           <Stat label="Tiempo con anuncios" value={formatAirtime(platform.airtimeMs)} />
           <Stat label="Pagos durante anuncios" value={formatCount(platform.attendedPayments)} />
@@ -58,135 +70,82 @@ export async function AdminOverview() {
           <Stat label="Pantallas en línea" value={`${platform.screensOnline} de ${platform.screens}`} />
           <Stat label="Hosts" value={formatCount(platform.hosts)} />
           <Stat label="Anunciantes" value={formatCount(platform.advertisers)} />
-          <Stat label="Cobros CoDi" value={formatCount(platform.payments)} />
+          <Stat label="Cobros CoDi" value={formatCount(platform.payments)} hint={formatMxn(platform.paymentsAmountCents)} />
         </div>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="text-[18px] font-medium tracking-[-0.02em]">Resumen</h2>
-        <p className="mt-1 text-[14px] text-[var(--cd-muted)]">
-          Totales del día y la semana (CoDi).
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Hoy · cobros" value={String(stats.todayCount)} />
-          <Stat label="Hoy · monto" value={formatMxn(stats.todayAmount)} />
-          <Stat label="Semana · cobros" value={String(stats.weekCount)} />
-          <Stat label="Semana · monto" value={formatMxn(stats.weekAmount)} />
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Hoy · cobros" value={formatCount(stats.todayCount)} hint={pesos(stats.todayAmount)} />
+          <Stat label="Semana · cobros" value={formatCount(stats.weekCount)} hint={pesos(stats.weekAmount)} />
         </div>
-      </section>
+      </Section>
 
-      <section className="mt-12">
-        <h2 className="text-[18px] font-medium tracking-[-0.02em]">Máquinas</h2>
-        <p className="mt-1 text-[14px] text-[var(--cd-muted)]">
-          Kioscos instalados. Abre el perfil para ver la pantalla en vivo.
-        </p>
-        <ul className="mt-4 divide-y divide-[var(--cd-line)] border-y border-[var(--cd-line)]">
-          {machines.map((m) => (
-            <li
-              key={m.id}
-              className="flex flex-wrap items-center justify-between gap-3 py-4"
-            >
-              <div>
-                <p className="text-[15px] font-medium">{m.name}</p>
-                <p className="text-[13px] text-[var(--cd-muted)]">{m.location}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <StatusPill status={m.status} />
-                <Link
-                  href={
-                    m.tokenVersion != null
-                      ? kioskPath({ id: m.id, profile: m.profile }, screenToken(m.id, m.tokenVersion))
-                      : m.kioskPath
-                  }
-                  prefetch={false}
-                  target="_blank"
-                  className="text-[13px] font-medium text-[var(--cd-accent)]"
-                >
-                  Abrir kiosco
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Section title="Kioscos" description="Abre un kiosco para verlo en vivo. Los kioscos vinculados abren con su clave.">
+        <Card className="overflow-hidden">
+          <ul className="divide-y divide-[var(--cd-line)]">
+            {machines.map((m) => (
+              <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                <div className="min-w-0">
+                  <p className="text-[length:var(--cd-body)] font-medium">{m.name}</p>
+                  <p className="text-[length:var(--cd-small)] text-[var(--cd-muted)]">{m.location}</p>
+                </div>
+                <div className="flex items-center gap-4 text-[length:var(--cd-small)]">
+                  <ScreenStatus status={m.status} />
+                  <Link
+                    href={
+                      m.tokenVersion != null
+                        ? kioskPath({ id: m.id, profile: m.profile }, screenToken(m.id, m.tokenVersion))
+                        : m.kioskPath
+                    }
+                    prefetch={false}
+                    target="_blank"
+                    className="font-medium text-[var(--cd-accent)]"
+                  >
+                    Abrir kiosco
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </Section>
 
-      <section className="mt-12 mb-16">
-        <h2 className="text-[18px] font-medium tracking-[-0.02em]">
-          Transacciones CoDi
-        </h2>
-        <p className="mt-1 text-[14px] text-[var(--cd-muted)]">
-          Pagos recientes guardados en la base de datos.
-        </p>
+      <Section title="Cobros CoDi recientes">
         {payments.length === 0 ? (
-          <p className="mt-6 text-[14px] text-[var(--cd-subtle)]">
-            Aún no hay cobros. Genera un QR en el kiosco para verlos aquí.
-          </p>
+          <Card className="px-5 py-6 text-[length:var(--cd-body)] text-[var(--cd-muted)]">
+            Aún no hay cobros. Genera un QR en un kiosco para verlos aquí.
+          </Card>
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[560px] text-left text-[13px]">
-              <thead>
-                <tr className="border-b border-[var(--cd-line)] text-[var(--cd-muted)]">
-                  <th className="py-2 pr-3 font-medium">Hora</th>
-                  <th className="py-2 pr-3 font-medium">Máquina</th>
-                  <th className="py-2 pr-3 font-medium">Monto</th>
-                  <th className="py-2 pr-3 font-medium">Estado</th>
-                  <th className="py-2 font-medium">Folio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.map((p) => (
-                  <tr key={p.qrId} className="border-b border-[var(--cd-line)]">
-                    <td className="py-2.5 pr-3 tabular-nums">
-                      {formatTime(p.datePaid ?? p.updatedAt)}
-                    </td>
-                    <td className="py-2.5 pr-3">{p.machineId ?? "—"}</td>
-                    <td className="py-2.5 pr-3 tabular-nums">
-                      {formatMxn(p.amount ?? 0)}
-                    </td>
-                    <td className="py-2.5 pr-3">
-                      {p.status === "PAID" ? "Pagado" : "Pendiente"}
-                    </td>
-                    <td className="py-2.5 font-mono text-[12px]">
-                      {(p.transactionId ?? p.qrId).slice(-10)}
-                    </td>
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-left text-[length:var(--cd-small)]">
+                <thead className="text-[var(--cd-muted)]">
+                  <tr className="border-b border-[var(--cd-line)]">
+                    <th className="px-4 py-2 font-normal sm:px-5">Hora</th>
+                    <th className="px-3 py-2 font-normal">Máquina</th>
+                    <th className="px-3 py-2 text-right font-normal">Monto</th>
+                    <th className="px-3 py-2 font-normal">Estado</th>
+                    <th className="px-4 py-2 font-normal sm:px-5">Folio</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[var(--cd-line)]">
+                  {payments.map((p) => (
+                    <tr key={p.qrId}>
+                      <td className="px-4 py-2.5 tabular-nums sm:px-5">{formatTime(p.datePaid ?? p.updatedAt)}</td>
+                      <td className="px-3 py-2.5">{p.machineId ? (machineName.get(p.machineId) ?? p.machineId) : "—"}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{pesos(p.amount ?? 0)}</td>
+                      <td className="px-3 py-2.5">{p.status === "PAID" ? "Pagado" : "Pendiente"}</td>
+                      <td className="px-4 py-2.5 font-mono text-[12px] sm:px-5">{(p.transactionId ?? p.qrId).slice(-10)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         )}
-      </section>
+      </Section>
+
+      <Section title="Datos de demo" description="Host Plaza Centro con 3 pantallas, Silvertag como piloto y dos semanas de actividad. Todo queda marcado como demo.">
+        <SeedButton />
+      </Section>
     </main>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-[var(--cd-line)] bg-white px-4 py-3">
-      <p className="text-[12px] text-[var(--cd-muted)]">{label}</p>
-      <p className="mt-1 text-[20px] font-medium tracking-[-0.02em] tabular-nums">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function StatusPill({ status }: { status: string }) {
-  const online = status === "online";
-  return (
-    <span
-      className={[
-        "inline-flex items-center gap-1.5 text-[12px] font-medium",
-        online ? "text-[var(--cd-success)]" : "text-[var(--cd-muted)]",
-      ].join(" ")}
-    >
-      <span
-        className={[
-          "h-1.5 w-1.5 rounded-full",
-          online ? "bg-[var(--cd-success)]" : "bg-[var(--cd-subtle)]",
-        ].join(" ")}
-      />
-      {online ? "En línea" : status === "offline" ? "Sin conexión" : "Sin conectar aún"}
-    </span>
   );
 }

@@ -137,7 +137,10 @@ export async function CampaignDetailView({
       ) : null}
       {state === "blocked" ? (
         <p className="mt-6 rounded-[var(--cd-radius-md)] bg-[var(--cd-danger-soft)] px-4 py-3 text-[length:var(--cd-small)] text-[var(--cd-danger)]">
-          Pausamos este video para revisarlo. No se está mostrando en las pantallas.
+          {campaign.creative.status === "rejected"
+            ? "Rechazamos este video y no se está mostrando en las pantallas."
+            : "Pausamos este video para revisarlo. No se está mostrando en las pantallas."}
+          {campaign.creative.moderationNote ? ` Motivo: ${campaign.creative.moderationNote}` : null}
         </p>
       ) : null}
 
