@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { KioskPreview } from "@/components/dooh/KioskPreview";
 import { DemoBadge } from "@/components/app/DemoBadge";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
@@ -47,6 +47,16 @@ type Props = {
 };
 
 const STEPS = ["Nombre", "Video", "Pantallas", "Fechas", "Revisión"] as const;
+
+/** Keeps the active step visible in the horizontally scrolling step bar (phones). */
+function StepScroller({ step }: { step: number }) {
+  useEffect(() => {
+    const list = document.getElementById("wizard-steps");
+    const active = list?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (list && active) list.scrollTo({ left: Math.max(0, active.offsetLeft - list.offsetLeft - 16), behavior: "smooth" });
+  }, [step]);
+  return null;
+}
 const DAY = 86_400_000;
 
 function inputDate(d: Date): string {
@@ -135,7 +145,8 @@ export function CampaignWizard(props: Props) {
 
   return (
     <div className="mt-6">
-      <ol className="flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none]" aria-label="Pasos">
+      <StepScroller step={step} />
+      <ol id="wizard-steps" className="flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none]" aria-label="Pasos">
         {STEPS.map((label, i) => (
           <li key={label} className="shrink-0">
             <button
@@ -549,7 +560,8 @@ function ScreensStep({
           const on = Boolean(selected[s.id]);
           return (
             <li key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-              <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+              {/* min width makes the spots stepper wrap to its own row on phones */}
+              <label className="flex min-w-[220px] flex-1 cursor-pointer items-center gap-3">
                 <input
                   type="checkbox"
                   checked={on}
@@ -558,17 +570,17 @@ function ScreensStep({
                 />
                 <span className="min-w-0">
                   <span className="flex items-center gap-2">
-                    <span className="truncate text-[length:var(--cd-body)] font-medium">{s.siteName}</span>
+                    <span className="truncate text-[length:var(--cd-body)] font-medium">{s.name}</span>
                     {s.isDemo ? <DemoBadge /> : null}
                   </span>
                   <span className="block truncate text-[length:var(--cd-small)] text-[var(--cd-muted)]">
-                    {s.name}
+                    {s.siteName}
                     {s.siteAddress ? ` · ${s.siteAddress}` : ""}
                   </span>
                 </span>
               </label>
               {on && !house ? (
-                <div className="flex items-center gap-1" aria-label={`Spots en ${s.name}`}>
+                <div className="ml-8 flex items-center gap-1 sm:ml-0" aria-label={`Spots en ${s.name}`}>
                   <StepperButton label="Menos" onClick={() => setSpots(s.id, selected[s.id] - 1)} disabled={selected[s.id] <= 1}>
                     −
                   </StepperButton>
