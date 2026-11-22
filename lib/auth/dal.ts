@@ -6,7 +6,7 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
 import { loadViewer } from "./accounts";
 import type { OrgCtx } from "@/lib/data/context";
 import { canUseArea, homePathFor, type Area, type Viewer } from "./roles";
@@ -38,6 +38,8 @@ export async function clearSessionCookie() {
 
 /** Verified viewer for this request, or null. Memoized per request. */
 export const getViewer = cache(async (): Promise<Viewer | null> => {
+  // Session checks compare expiry against the clock: always request-time.
+  await connection();
   const jar = await cookies();
   const payload = verifySession(jar.get(SESSION_COOKIE)?.value, deriveKey("session-v1"));
   if (!payload) return null;
