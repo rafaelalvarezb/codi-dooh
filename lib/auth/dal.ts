@@ -8,6 +8,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { loadViewer } from "./accounts";
+import type { OrgCtx } from "@/lib/data/context";
 import { canUseArea, homePathFor, type Area, type Viewer } from "./roles";
 import { deriveKey } from "./secret";
 import {
@@ -75,4 +76,9 @@ export async function apiViewer(
     return { error: NextResponse.json({ error: "No tienes acceso a esta sección." }, { status: 403 }) };
   }
   return { viewer };
+}
+
+/** The only way to build an OrgCtx: from a verified viewer's active org. */
+export function orgCtx(viewer: Viewer & { org: NonNullable<Viewer["org"]> }): OrgCtx {
+  return { orgId: viewer.org.id, kind: viewer.org.kind };
 }
