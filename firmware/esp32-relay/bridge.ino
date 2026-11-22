@@ -28,12 +28,26 @@ void setup() {
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, RELAY_OFF);
 
+  // Totalplay / some home routers refuse ESP32 if we reconnect too aggressively.
+  WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
+  WiFi.disconnect(true, true);
+  delay(1000);
+  WiFi.setSleep(false);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.print("WiFi");
+  uint8_t tries = 0;
   while (WiFi.status() != WL_CONNECTED) {
-    delay(400);
+    delay(500);
     Serial.print(".");
+    tries++;
+    if (tries % 20 == 0) {
+      Serial.println();
+      Serial.println("Retry WiFi begin...");
+      WiFi.disconnect(true, true);
+      delay(1000);
+      WiFi.begin(WIFI_SSID, WIFI_PASS);
+    }
   }
   Serial.println();
   Serial.print("IP ");
