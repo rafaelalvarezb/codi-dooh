@@ -18,6 +18,9 @@
 # production
 /build
 
+# local PGlite database + dev uploads (no DATABASE_URL / Blob token)
+/.data/
+
 # misc
 .DS_Store
 *.pem
