@@ -13,6 +13,7 @@ export async function AppShell({ area, children }: { area: Area; children: React
   const nav: NavItem[] = [];
   if (canHost(kind)) {
     nav.push({ href: "/host", label: "Resumen", exact: true });
+    nav.push({ href: "/host/ingresos", label: "Ingresos" });
     nav.push({ href: "/host/pantallas", label: "Pantallas" });
     nav.push({ href: "/host/campanas", label: "Mis anuncios" });
   }
@@ -23,15 +24,18 @@ export async function AppShell({ area, children }: { area: Area; children: React
     <div className="min-h-dvh bg-[var(--cd-surface)]">
       {viewer.actingAsAdmin && viewer.org ? <ActingAsBanner orgName={viewer.org.name} /> : null}
       <header className="sticky top-0 z-30 border-b border-[var(--cd-line)] bg-[var(--cd-bg)]/95 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
+        {/* Phone: logo + account on top, sections in a scrollable row below. */}
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-4 px-4 sm:h-14 sm:flex-nowrap sm:px-6">
           <Link
             href="/"
             prefetch={false}
-            className="shrink-0 font-mono text-[length:var(--cd-label)] tracking-[0.08em] text-[var(--cd-ink)] uppercase"
+            className="flex h-14 shrink-0 items-center font-mono text-[length:var(--cd-label)] tracking-[0.08em] text-[var(--cd-ink)] uppercase sm:h-auto"
           >
             CODI·DOOH
           </Link>
-          <NavLinks items={nav} />
+          <div className="order-last -mx-3 w-[calc(100%+1.5rem)] min-w-0 px-3 pb-2.5 sm:order-none sm:mx-0 sm:w-auto sm:px-0 sm:pb-0">
+            <NavLinks items={nav} />
+          </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {viewer.org?.isDemo ? <DemoBadge /> : null}
             <AccountMenu
@@ -52,7 +56,7 @@ export async function AppShell({ area, children }: { area: Area; children: React
 export function AppShellFallback() {
   return (
     <div className="min-h-dvh bg-[var(--cd-surface)]">
-      <div className="h-14 border-b border-[var(--cd-line)] bg-[var(--cd-bg)]" />
+      <div className="h-[106px] border-b border-[var(--cd-line)] bg-[var(--cd-bg)] sm:h-14" />
       <div className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6">
         <div className="h-8 w-48 animate-pulse rounded-[var(--cd-radius-sm)] bg-[var(--cd-line)]" />
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
