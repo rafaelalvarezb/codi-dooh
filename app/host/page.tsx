@@ -8,7 +8,7 @@ import { hostAnalytics } from "@/lib/data/analytics";
 import { hostIncome } from "@/lib/data/host";
 import { PayoutHero } from "@/components/host/IncomeViews";
 
-export const metadata: Metadata = { title: "Resumen · CODI·DOOH" };
+export const metadata: Metadata = { title: "Resumen · cobten" };
 
 export default async function HostHome() {
   const viewer = await requireOrgViewer("host", "/host");

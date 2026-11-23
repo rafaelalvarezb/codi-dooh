@@ -233,3 +233,22 @@ export const rateLimits = pgTable("rate_limits", {
   windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
   count: integer("count").notNull(),
 });
+
+/** "Agenda una demo" requests from the cobten.com landing page. */
+export const leads = pgTable(
+  "leads",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    business: text("business").notNull(),
+    phone: text("phone").notNull(),
+    email: text("email"),
+    city: text("city"),
+    spaces: integer("spaces"),
+    message: text("message"),
+    status: text("status", { enum: ["new", "contacted"] }).notNull().default("new"),
+    source: text("source").notNull().default("landing"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("leads_created_idx").on(t.createdAt)],
+);

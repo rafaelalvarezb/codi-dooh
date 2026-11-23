@@ -10,7 +10,7 @@ import { DemoFilterToggle } from "@/components/admin/DemoFilterToggle";
 import { hideDemo } from "@/lib/demo-filter";
 import { formatMxn } from "@/lib/pricing";
 
-export const metadata: Metadata = { title: "Campañas · Admin · CODI·DOOH", robots: { index: false } };
+export const metadata: Metadata = { title: "Campañas · Admin · cobten", robots: { index: false } };
 
 function shortDate(d: Date) {
   return d.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "short" });

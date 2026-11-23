@@ -13,7 +13,7 @@ import { getHostScreen } from "@/lib/data/host";
 import { SCREEN_ID } from "@/lib/data/host-schemas";
 import { PROFILE_LABEL, SITE_KIND_LABEL } from "@/lib/host-catalog";
 
-export const metadata: Metadata = { title: "Pantalla · CODI·DOOH" };
+export const metadata: Metadata = { title: "Pantalla · cobten" };
 
 export default async function Page({ params, searchParams }: PageProps<"/host/pantallas/[id]">) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);

@@ -6,7 +6,7 @@ import { BusinessForm, ClabeForm, ScreenForm, SiteForm } from "@/components/host
 import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
 import { listSites, onboardingState } from "@/lib/data/host";
 
-export const metadata: Metadata = { title: "Da de alta tu negocio · CODI·DOOH" };
+export const metadata: Metadata = { title: "Da de alta tu negocio · cobten" };
 
 const STEPS = [
   { id: "business", title: "Tu negocio", body: "Nombre y razón social." },

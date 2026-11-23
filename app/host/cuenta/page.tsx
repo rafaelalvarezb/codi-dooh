@@ -4,7 +4,7 @@ import { BusinessForm, ClabeForm } from "@/components/host/HostForms";
 import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
 import { getHostOrg } from "@/lib/data/host";
 
-export const metadata: Metadata = { title: "Datos de tu negocio · CODI·DOOH" };
+export const metadata: Metadata = { title: "Datos de tu negocio · cobten" };
 
 export default async function Page() {
   const viewer = await requireOrgViewer("host", "/host/cuenta");

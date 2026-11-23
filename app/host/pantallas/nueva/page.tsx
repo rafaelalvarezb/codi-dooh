@@ -5,7 +5,7 @@ import { ScreenForm } from "@/components/host/HostForms";
 import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
 import { listSites } from "@/lib/data/host";
 
-export const metadata: Metadata = { title: "Agregar pantalla · CODI·DOOH" };
+export const metadata: Metadata = { title: "Agregar pantalla · cobten" };
 
 export default async function Page() {
   const viewer = await requireOrgViewer("host", "/host/pantallas/nueva");

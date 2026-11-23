@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CobtenLogo } from "@/components/brand/CobtenLogo";
 import type { ReactNode } from "react";
 import { requireViewer } from "@/lib/auth/dal";
 import { canAdvertise, canHost, type Area } from "@/lib/auth/roles";
@@ -16,6 +17,7 @@ export async function AppShell({ area, children }: { area: Area; children: React
     nav.push({ href: "/admin/creativos", label: "Videos" });
     nav.push({ href: "/admin/campanas", label: "Campañas" });
     nav.push({ href: "/admin/organizaciones", label: "Organizaciones" });
+    nav.push({ href: "/admin/contactos", label: "Contactos" });
     nav.push({ href: "/admin/ajustes", label: "Ajustes" });
   } else if (canHost(kind)) {
     nav.push({ href: "/host", label: "Resumen", exact: true });
@@ -35,9 +37,10 @@ export async function AppShell({ area, children }: { area: Area; children: React
           <Link
             href="/"
             prefetch={false}
-            className="flex h-14 shrink-0 items-center font-mono text-[length:var(--cd-label)] tracking-[0.08em] text-[var(--cd-ink)] uppercase sm:h-auto"
+            aria-label="cobten"
+            className="flex h-14 shrink-0 items-center text-[19px] sm:h-auto"
           >
-            CODI·DOOH
+            <CobtenLogo />
           </Link>
           <div className="order-last -mx-3 w-[calc(100%+1.5rem)] min-w-0 px-3 pb-2.5 sm:order-none sm:mx-0 sm:w-auto sm:px-0 sm:pb-0">
             <NavLinks items={nav} />

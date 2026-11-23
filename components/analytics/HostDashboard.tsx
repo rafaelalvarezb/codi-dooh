@@ -105,7 +105,7 @@ export function HostDashboard({ h, now }: { h: NonNullable<HostAnalytics>; now: 
       <Section title="Anuncios al aire en tus pantallas">
         {h.ads.length === 0 ? (
           <Card className="px-5 py-6 text-[length:var(--cd-body)] text-[var(--cd-muted)]">
-            Ahora no corre ningún anuncio. Mientras tanto, tus pantallas pasan los videos de CODI·DOOH.
+            Ahora no corre ningún anuncio. Mientras tanto, tus pantallas pasan los videos de cobten.
           </Card>
         ) : (
           <Card className="overflow-hidden">
