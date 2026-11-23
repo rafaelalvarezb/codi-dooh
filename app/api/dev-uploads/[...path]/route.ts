@@ -30,7 +30,7 @@ export async function PUT(request: Request, { params }: RouteContext<"/api/dev-u
   }
   const data = Buffer.from(await request.arrayBuffer());
   if (data.length === 0 || data.length > MAX_CREATIVE_BYTES) {
-    return NextResponse.json({ error: "Archivo vacío o mayor a 50 MB." }, { status: 413 });
+    return NextResponse.json({ error: "Archivo vacío o demasiado grande." }, { status: 413 });
   }
   // Mimic Blob's random suffix so re-uploads never overwrite.
   const ext = path.extname(target.file);

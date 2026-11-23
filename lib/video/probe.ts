@@ -15,6 +15,7 @@ export type ProbeResult = {
 type Mp4File = ReturnType<typeof createFile>;
 
 export function probeMp4(data: ArrayBuffer): ProbeResult | null {
+  data = withoutMetadataBoxes(data);
   const file = createFile();
   let ready = false;
   let failed = false;
@@ -41,6 +42,45 @@ export function probeMp4(data: ArrayBuffer): ProbeResult | null {
     width: video.video?.width ?? video.track_width,
     height: video.video?.height ?? video.track_height,
   };
+}
+
+const CONTAINER_BOXES = new Set(["moov", "trak", "mdia", "minf", "stbl", "edts", "dinf", "mvex"]);
+
+/**
+ * Editors (Adobe Premiere, Final Cut, phones) add metadata boxes such as
+ * `udta` with QuickTime `©TIM` atoms that mp4box rejects, failing the whole
+ * file. We never need that metadata, so on a copy we rename `udta`/`meta`
+ * boxes inside the movie header to `free`, which every parser skips.
+ */
+function withoutMetadataBoxes(data: ArrayBuffer): ArrayBuffer {
+  const u8 = new Uint8Array(data);
+  const hits: number[] = [];
+  const walk = (start: number, end: number, depth: number) => {
+    const dv = new DataView(data);
+    let off = start;
+    while (off + 8 <= end) {
+      let size = dv.getUint32(off);
+      const type = String.fromCharCode(u8[off + 4], u8[off + 5], u8[off + 6], u8[off + 7]);
+      let header = 8;
+      if (size === 1) {
+        if (off + 16 > end) return;
+        size = Number(dv.getBigUint64(off + 8));
+        header = 16;
+      } else if (size === 0) {
+        size = end - off;
+      }
+      if (size < header || off + size > end) return;
+      if (depth > 0 && (type === "udta" || type === "meta")) hits.push(off + 4);
+      else if (CONTAINER_BOXES.has(type) && depth < 6) walk(off + header, off + size, depth + 1);
+      off += size;
+    }
+  };
+  walk(0, u8.length, 0);
+  if (hits.length === 0) return data;
+  const copy = data.slice(0);
+  const out = new Uint8Array(copy);
+  for (const at of hits) out.set([0x66, 0x72, 0x65, 0x65], at); // "free"
+  return copy;
 }
 
 /**

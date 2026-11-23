@@ -6,7 +6,8 @@ export type UploadMode = "blob" | "local" | "none";
 
 /** Reads codec/duration/size in the browser for instant feedback (server re-checks). */
 export async function inspectFile(file: File): Promise<{ meta: VideoMeta | null; check: CreativeCheck | null }> {
-  if (!/\.mp4$/i.test(file.name) && file.type !== "video/mp4") {
+  // MP4 and QuickTime (.mov/.m4v) share the same box structure.
+  if (!/\.(mp4|m4v|mov)$/i.test(file.name) && !/^video\/(mp4|quicktime|x-m4v)$/.test(file.type)) {
     return { meta: null, check: null };
   }
   const { probeMp4 } = await import("@/lib/video/probe");

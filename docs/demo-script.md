@@ -18,7 +18,7 @@ app bancaria con CoDi.
 
 1. En la ventana de incógnito abre `/registro`, elige **Quiero anunciarme** y
    crea la cuenta "True Religion".
-2. **Crear campaña** → nombre → sube el MP4 (6, 10 o 15 segundos).
+2. **Crear campaña** → nombre → sube el video (MP4 o MOV, de 5 a 30 segundos).
 3. Muestra la **vista previa exacta del kiosco**: el video se ve completo, sin
    recortes (con franjas negras si no llena la pantalla), y la zona segura.
 4. Elige las pantallas de Plaza Centro, revisa fechas y total, y **Publicar**.

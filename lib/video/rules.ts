@@ -3,10 +3,13 @@
  * (authoritative re-validation). Pure.
  */
 
-export const MAX_CREATIVE_BYTES = 50 * 1024 * 1024;
-export const ALLOWED_DURATIONS_SEC = [6, 10, 15] as const;
+export const MAX_CREATIVE_BYTES = 100 * 1024 * 1024;
+export const MAX_CREATIVE_MB = MAX_CREATIVE_BYTES / 1024 / 1024;
+/** Any length in this range (common spots: 6, 10, 15, 20, 30 s). */
+export const MIN_DURATION_SEC = 5;
+export const MAX_DURATION_SEC = 30;
 export const DURATION_TOLERANCE_MS = 500;
-export const MIN_SHORT_SIDE_PX = 720;
+export const MIN_SHORT_SIDE_PX = 480;
 
 /**
  * DOOH column of the kiosk at its native 1280×800 frame:
@@ -58,25 +61,27 @@ export function letterboxFor(
   return ratio > 1 ? "topBottom" : "sides";
 }
 
+/** Whole seconds when the length is accepted (5–30 s, ±0.5 s), else null. */
 export function matchDuration(durationMs: number): number | null {
-  for (const sec of ALLOWED_DURATIONS_SEC) {
-    if (Math.abs(durationMs - sec * 1000) <= DURATION_TOLERANCE_MS) return sec;
-  }
-  return null;
+  if (!Number.isFinite(durationMs)) return null;
+  const min = MIN_DURATION_SEC * 1000 - DURATION_TOLERANCE_MS;
+  const max = MAX_DURATION_SEC * 1000 + DURATION_TOLERANCE_MS;
+  if (durationMs < min || durationMs > max) return null;
+  return Math.min(MAX_DURATION_SEC, Math.max(MIN_DURATION_SEC, Math.round(durationMs / 1000)));
 }
 
 export function checkCreative(meta: VideoMeta): CreativeCheck {
   const errors: string[] = [];
   if (!isH264(meta.codec)) {
-    errors.push("El video debe estar en MP4 con H.264. Expórtalo de nuevo con ese formato.");
+    errors.push("Este video usa un formato que el kiosco no puede reproducir (por ejemplo HEVC de iPhone). Súbelo en H.264.");
   }
   if (meta.sizeBytes > MAX_CREATIVE_BYTES) {
-    errors.push("El archivo pesa más de 50 MB.");
+    errors.push(`El archivo pesa más de ${MAX_CREATIVE_MB} MB.`);
   }
   const durationSec = matchDuration(meta.durationMs);
   if (durationSec === null) {
     const actual = (meta.durationMs / 1000).toFixed(1);
-    errors.push(`Dura ${actual} s. Debe durar 6, 10 o 15 segundos.`);
+    errors.push(`Dura ${actual} s. Debe durar entre ${MIN_DURATION_SEC} y ${MAX_DURATION_SEC} segundos.`);
   }
   if (Math.min(meta.width, meta.height) < MIN_SHORT_SIDE_PX) {
     errors.push(
