@@ -13,7 +13,7 @@ import { badRequest, errorResponse } from "@/lib/http";
 import { newId } from "@/lib/ids";
 import { isOwnedUploadUrl, LOCAL_UPLOAD_DIR, LOCAL_UPLOAD_ROUTE, orgUploadPrefix, storageMode } from "@/lib/storage";
 import { probeMp4 } from "@/lib/video/probe";
-import { checkSource, MAX_CREATIVE_BYTES, MAX_CREATIVE_MB } from "@/lib/video/rules";
+import { checkCreative, checkSource, MAX_CREATIVE_BYTES, MAX_CREATIVE_MB } from "@/lib/video/rules";
 import { extractPoster, inspectSource, transcodeForKiosk } from "@/lib/video/transcode";
 
 /** Conversion of a 30 s 1080p spot takes ~10–60 s on a serverless CPU. */
@@ -87,26 +87,37 @@ export async function POST(request: Request) {
     const input = path.join(dir, "source");
     const sizeBytes = await downloadSource(sourceUrl, input);
 
-    const info = await inspectSource(input);
-    if (!info) throw new ValidationError("No pudimos leer el video. Prueba con otro archivo.");
-    const errors = checkSource({ ...info, sizeBytes });
-    if (errors.length) throw new ValidationError(errors.join(" "));
-
     const output = path.join(dir, "kiosk.mp4");
+    let converted = true;
     try {
+      const info = await inspectSource(input);
+      if (!info) throw new ValidationError("No pudimos leer el video. Prueba con otro archivo.");
+      const errors = checkSource({ ...info, sizeBytes });
+      if (errors.length) throw new ValidationError(errors.join(" "));
       await transcodeForKiosk(input, output);
     } catch (err) {
-      if (err instanceof Error && err.message === "TIMEOUT") {
-        throw new ValidationError("El video tardó demasiado en procesarse. Prueba con un archivo más ligero.");
+      if (err instanceof ValidationError) throw err;
+      // ffmpeg missing or failing on this server: fall back to the original
+      // when it already plays on the kiosk (H.264 MP4), as before conversion.
+      console.error("[creatives] conversion unavailable, trying original", err);
+      const src = await readFile(input);
+      const probe = probeMp4(src.buffer.slice(src.byteOffset, src.byteOffset + src.byteLength) as ArrayBuffer);
+      const check = probe ? checkCreative({ ...probe, sizeBytes: src.byteLength }) : null;
+      if (!check?.ok) {
+        if (err instanceof Error && err.message === "TIMEOUT") {
+          throw new ValidationError("El video tardó demasiado en procesarse. Prueba con un archivo más ligero.");
+        }
+        throw new ValidationError(check?.errors.join(" ") || "No pudimos convertir este video. Prueba con otro archivo.");
       }
-      throw new ValidationError("No pudimos convertir este video. Prueba con otro archivo.");
+      await copyFile(input, output);
+      converted = false;
     }
     const outBuf = await readFile(output);
     const probe = probeMp4(outBuf.buffer.slice(outBuf.byteOffset, outBuf.byteOffset + outBuf.byteLength) as ArrayBuffer);
     if (!probe) throw new Error("converted file unreadable");
 
     const posterFile = path.join(dir, "poster.jpg");
-    const hasPoster = await extractPoster(output, posterFile, probe.durationMs);
+    const hasPoster = converted && (await extractPoster(output, posterFile, probe.durationMs).catch(() => false));
 
     const base = `${orgUploadPrefix(viewer.org.id)}${newId("v", 10)}`;
     const blobUrl = await store(`${base}.mp4`, output, "video/mp4");
