@@ -8,7 +8,7 @@ import { listAllCreatives } from "@/lib/data/admin";
 import { DemoFilterToggle } from "@/components/admin/DemoFilterToggle";
 import { hideDemo } from "@/lib/demo-filter";
 
-export const metadata: Metadata = { title: "Videos · Admin · CODI·DOOH", robots: { index: false } };
+export const metadata: Metadata = { title: "Videos · Admin · cobten", robots: { index: false } };
 
 const STATUS = {
   active: { label: "Activo", cls: "bg-[var(--cd-success-soft)] text-[var(--cd-success)]" },

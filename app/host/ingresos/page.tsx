@@ -4,7 +4,7 @@ import { IncomeByScreen, IncomeStats, LedgerTable, PayoutHero } from "@/componen
 import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
 import { hostIncome } from "@/lib/data/host";
 
-export const metadata: Metadata = { title: "Ingresos · CODI·DOOH" };
+export const metadata: Metadata = { title: "Ingresos · cobten" };
 
 export default async function Page() {
   const viewer = await requireOrgViewer("host", "/host/ingresos");

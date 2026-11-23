@@ -63,7 +63,7 @@ export function IncomeStats({ income }: { income: HostIncome }) {
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Stat label="Anuncios vendidos este mes" value={formatMxn(c.grossCents)} hint="Ingreso bruto en tus pantallas" />
       <Stat label={`Tu parte (${pct(hostBps)})`} value={formatMxn(c.hostCents)} />
-      <Stat label={`Comisión CODI·DOOH (${pct(income.commissionBps)})`} value={formatMxn(c.platformCents)} />
+      <Stat label={`Comisión cobten (${pct(income.commissionBps)})`} value={formatMxn(c.platformCents)} />
       <Stat label="Valor de pilotos" value={formatMxn(c.pilotValueCents)} hint="Campañas piloto. No generan ingreso." />
     </div>
   );

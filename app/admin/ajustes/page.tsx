@@ -4,7 +4,7 @@ import { SettingsForm } from "@/components/admin/AdminActions";
 import { requireViewer } from "@/lib/auth/dal";
 import { getSettings } from "@/lib/settings";
 
-export const metadata: Metadata = { title: "Ajustes · Admin · CODI·DOOH", robots: { index: false } };
+export const metadata: Metadata = { title: "Ajustes · Admin · cobten", robots: { index: false } };
 
 export default async function Page() {
   await requireViewer("admin", "/admin/ajustes");

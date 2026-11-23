@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { AuthFrame } from "@/components/auth/AuthFrame";
 import { LoginForm } from "@/components/auth/LoginForm";
 
-export const metadata: Metadata = { title: "Entrar · CODI·DOOH" };
+export const metadata: Metadata = { title: "Entrar · cobten" };
 
 export default function LoginPage() {
   return (

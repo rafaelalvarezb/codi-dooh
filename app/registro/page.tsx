@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { AuthFrame } from "@/components/auth/AuthFrame";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
-export const metadata: Metadata = { title: "Crear cuenta · CODI·DOOH" };
+export const metadata: Metadata = { title: "Crear cuenta · cobten" };
 
 export default function RegisterPage() {
   return (

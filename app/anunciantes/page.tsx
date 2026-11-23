@@ -8,7 +8,7 @@ import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
 import { listCampaigns } from "@/lib/data/campaigns";
 import { advertiserTotals } from "@/lib/data/analytics";
 
-export const metadata: Metadata = { title: "Campañas · CODI·DOOH" };
+export const metadata: Metadata = { title: "Campañas · cobten" };
 
 export default async function AdvertiserHome() {
   const viewer = await requireOrgViewer("advertiser", "/anunciantes");

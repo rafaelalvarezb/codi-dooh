@@ -6,7 +6,7 @@ import { CampaignList } from "@/components/campaigns/CampaignViews";
 import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
 import { listCampaigns } from "@/lib/data/campaigns";
 
-export const metadata: Metadata = { title: "Mis anuncios · CODI·DOOH" };
+export const metadata: Metadata = { title: "Mis anuncios · cobten" };
 
 export default async function HostCampaigns() {
   const viewer = await requireOrgViewer("host", "/host/campanas");

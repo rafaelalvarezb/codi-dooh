@@ -10,7 +10,7 @@ import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
 import { listHostScreens } from "@/lib/data/host";
 import { PROFILE_LABEL } from "@/lib/host-catalog";
 
-export const metadata: Metadata = { title: "Pantallas · CODI·DOOH" };
+export const metadata: Metadata = { title: "Pantallas · cobten" };
 
 export default async function Page() {
   const viewer = await requireOrgViewer("host", "/host/pantallas");

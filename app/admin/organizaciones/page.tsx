@@ -7,7 +7,7 @@ import { listOrgs } from "@/lib/data/admin";
 import { DemoFilterToggle } from "@/components/admin/DemoFilterToggle";
 import { hideDemo } from "@/lib/demo-filter";
 
-export const metadata: Metadata = { title: "Organizaciones · Admin · CODI·DOOH", robots: { index: false } };
+export const metadata: Metadata = { title: "Organizaciones · Admin · cobten", robots: { index: false } };
 
 const KIND = { host: "Host", advertiser: "Anunciante", both: "Host y anunciante" } as const;
 
