@@ -1,6 +1,13 @@
-# CODI · DOOH
+# cobten
 
-Kiosco **CoDi + DOOH** y plataforma de anuncios de autoservicio:
+Kiosco **CoDi + DOOH** y plataforma de anuncios de autoservicio. Un solo proyecto
+sirve dos dominios (ver `proxy.ts` y `lib/site.ts`):
+
+- **cobten.com**: página pública (código en `app/sitio`, `components/landing`).
+  Imágenes: [`docs/landing-imagenes.md`](docs/landing-imagenes.md).
+- **app.cobten.com**: la app (entrar, anunciantes, host, admin y kioscos).
+- `codi-dooh.vercel.app`, los previews y `localhost` siguen igual; la página
+  pública se ve en `/sitio`.
 
 - **Kiosco**: microcobros con transferencia QR (Pey) a **0% comisión** y pantalla de
   anuncios en la columna izquierda.
@@ -39,7 +46,8 @@ de verdad copia `.env.example` a `.env.local` y pon tu `PEY_API_KEY`.
 | `/registro`, `/entrar` | todos | Cuenta de anunciante o host |
 | `/anunciantes`, `/anunciantes/campanas/nueva`, `/anunciantes/campanas/[id]` | anunciante | Campañas, creador y resultados |
 | `/host`, `/host/ingresos`, `/host/pantallas`, `/host/bienvenida`, `/host/campanas` | host | Resumen, dinero, pantallas, alta y anuncios propios |
-| `/admin`, `/admin/creativos`, `/admin/campanas`, `/admin/organizaciones`, `/admin/ajustes` | admin | Operación de la plataforma |
+| `/admin`, `/admin/creativos`, `/admin/campanas`, `/admin/organizaciones`, `/admin/contactos`, `/admin/ajustes` | admin | Operación de la plataforma y solicitudes de demo |
+| `/sitio` (en cobten.com: `/`) | público | Página de inicio y formulario "Agenda una demo" (`POST /api/leads`) |
 | `/?profile=parking&screen=<id>&token=<t>&session=1` | kiosco | Pantalla vinculada: anuncios en vivo y proof of play |
 | `GET /api/dooh/playlist?screen=<id>` | kiosco | Lista de anuncios (rotación ponderada, caché corta) |
 | `POST /api/dooh/plays` | kiosco | Reproducciones, firmadas con el token de la pantalla |
@@ -78,13 +86,16 @@ Sin `screen=` el kiosco funciona exactamente como antes, con los videos de `publ
 3. **Environment Variables**: `SESSION_SECRET` (cadena larga aleatoria),
    `PORTAL_ADMIN_EMAIL` y `PORTAL_ADMIN_PASSWORD` (fuerte), `PEY_API_KEY` y, si Pey
    te da una, `PEY_WEBHOOK_SECRET`.
-4. Despliega. Para la demo: `/admin` → **Cargar datos de demo**.
+4. **Domains**: `cobten.com`, `www.cobten.com` (redirige a cobten.com) y `app.cobten.com`.
+   Opcional: `NEXT_PUBLIC_APP_URL` si la app vive en otro dominio (por defecto `https://app.cobten.com`).
+5. Despliega. Para la demo: `/admin` → **Cargar datos de demo**.
 
 Todas las variables están explicadas en `.env.example`.
 
 ## Documentos
 
 - Guion de la demo: [`docs/demo-script.md`](docs/demo-script.md)
+- Imágenes de la página pública: [`docs/landing-imagenes.md`](docs/landing-imagenes.md)
 - Roadmap y lo que quedó fuera: [`docs/ads-roadmap.md`](docs/ads-roadmap.md)
 - Design system: [`design/README.md`](design/README.md), [`design/SPEC.md`](design/SPEC.md),
   [`.cursor/rules/codidooh.mdc`](.cursor/rules/codidooh.mdc)
