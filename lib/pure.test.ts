@@ -68,7 +68,7 @@ describe("creative rules", () => {
   it("rejects other codecs, heavy files, wrong durations and low resolution", () => {
     expect(isH264("hvc1.1.6.L93")).toBe(false);
     expect(isH264("avc3.640028")).toBe(true);
-    const bad = checkCreative({ codec: "hvc1", durationMs: 45_000, width: 640, height: 360, sizeBytes: 120 * 1024 * 1024 });
+    const bad = checkCreative({ codec: "hvc1", durationMs: 45_000, width: 640, height: 360, sizeBytes: 300 * 1024 * 1024 });
     expect(bad.ok).toBe(false);
     expect(bad.errors).toHaveLength(4);
   });
