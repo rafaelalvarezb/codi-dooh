@@ -314,3 +314,26 @@ export function SeedButton() {
     </div>
   );
 }
+
+/** Landing demo request: toggles between "nuevo" and "contactado". */
+export function LeadStatusButton({ id, status }: { id: string; status: "new" | "contacted" }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function toggle() {
+    setBusy(true);
+    setError(null);
+    const res = await call(`/api/admin/leads/${id}`, "PATCH", { status: status === "new" ? "contacted" : "new" });
+    setBusy(false);
+    if (res.error) return setError(res.error);
+    router.refresh();
+  }
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button variant={status === "new" ? "primary" : "secondary"} size="sm" disabled={busy} onClick={() => void toggle()}>
+        {status === "new" ? "Marcar contactado" : "Marcar como nuevo"}
+      </Button>
+      <ErrorText>{error}</ErrorText>
+    </div>
+  );
+}

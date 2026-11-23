@@ -15,6 +15,13 @@
       "when": 1795368229945,
       "tag": "0001_drop_fit_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795459751826,
+      "tag": "0002_leads",
+      "breakpoints": true
     }
   ]
 }

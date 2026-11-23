@@ -9,6 +9,7 @@ import { monthName } from "@/components/host/IncomeViews";
 import { requireViewer } from "@/lib/auth/dal";
 import { platformRevenue } from "@/lib/data/admin";
 import { platformTotals } from "@/lib/data/analytics";
+import { countNewLeads } from "@/lib/data/leads";
 import { listMachines } from "@/lib/machines";
 import { listPayments, paymentStats } from "@/lib/payment-store";
 import { formatMxn } from "@/lib/pricing";
@@ -41,12 +42,13 @@ export async function AdminOverview() {
   const hidden = await hideDemo();
   const includeDemo = !hidden;
 
-  const [allMachines, payments, stats, platform, revenue] = await Promise.all([
+  const [allMachines, payments, stats, platform, revenue, newLeads] = await Promise.all([
     listMachines(),
     listPayments(25, { includeDemo }),
     paymentStats({ includeDemo }),
     platformTotals(now, { includeDemo }),
     platformRevenue(now, { includeDemo }),
+    countNewLeads(),
   ]);
   const machines = hidden ? allMachines.filter((m) => !m.isDemo) : allMachines;
   const cur = revenue.current;
@@ -61,6 +63,21 @@ export async function AdminOverview() {
         description={hidden ? "Dinero, actividad y kioscos reales, sin datos de demo." : "Dinero, actividad y kioscos de toda la plataforma, incluidos los datos de demo."}
         actions={<DemoFilterToggle hidden={hidden} />}
       />
+
+      {newLeads > 0 ? (
+        <Link
+          href="/admin/contactos"
+          className="mt-6 flex items-center justify-between gap-3 rounded-[var(--cd-radius-md)] border border-[var(--cd-accent)]/25 bg-[var(--cd-accent-soft)] px-4 py-3 text-[length:var(--cd-small)] text-[var(--cd-ink)] hover:border-[var(--cd-accent)]/50"
+        >
+          <span>
+            <strong className="font-medium">
+              {newLeads} {newLeads === 1 ? "solicitud nueva" : "solicitudes nuevas"} de demo
+            </strong>{" "}
+            desde cobten.com
+          </span>
+          <span className="text-[var(--cd-accent)]">Ver contactos →</span>
+        </Link>
+      ) : null}
 
       <Section title="Dinero" description={`Lo que va de ${monthName(month.year, month.month)}. Cada campaña suma día por día mientras corre.`}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
