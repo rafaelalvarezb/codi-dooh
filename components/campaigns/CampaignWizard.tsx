@@ -7,7 +7,7 @@ import { DemoBadge } from "@/components/app/DemoBadge";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
 import { capturePoster, inspectFile, uploadCreative, type UploadMode } from "@/lib/client/creative-upload";
 import { campaignMarketValueCents, formatMxn } from "@/lib/pricing";
-import { letterboxFor, MAX_CREATIVE_BYTES, type CreativeCheck, type Letterbox } from "@/lib/video/rules";
+import { letterboxFor, MAX_CREATIVE_BYTES, MAX_CREATIVE_MB, MAX_DURATION_SEC, MIN_DURATION_SEC, type CreativeCheck, type Letterbox } from "@/lib/video/rules";
 
 export type WizardScreen = {
   id: string;
@@ -318,14 +318,14 @@ function CreativeStep({
     setCheck(null);
     onChange(null);
     if (file.size > MAX_CREATIVE_BYTES) {
-      setErrors(["El archivo pesa más de 50 MB."]);
+      setErrors([`El archivo pesa más de ${MAX_CREATIVE_MB} MB.`]);
       return;
     }
     setPhase("checking");
     const inspected = await inspectFile(file);
     if (!inspected.meta || !inspected.check) {
       setPhase("idle");
-      setErrors(["No pudimos leer el video. Debe ser un archivo MP4."]);
+      setErrors(["No pudimos leer el video. Prueba con un MP4 o MOV."]);
       return;
     }
     setCheck(inspected.check);
@@ -343,7 +343,7 @@ function CreativeStep({
       const poster = await capturePoster(file);
       const uploaded = await uploadCreative({ file, poster, orgId, mode: uploadMode, onProgress: setProgress });
       setPhase("saving");
-      const label = (defaultLabel.trim() || file.name.replace(/\.mp4$/i, "")).slice(0, 80);
+      const label = (defaultLabel.trim() || file.name.replace(/\.(mp4|m4v|mov)$/i, "")).slice(0, 80);
       const res = await fetch("/api/creatives", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -371,7 +371,7 @@ function CreativeStep({
       <div>
         <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Sube tu video</h2>
         <p className="mt-1 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
-          MP4 (H.264), de 6, 10 o 15 segundos, hasta 50 MB. Horizontal o vertical.
+          MP4 o MOV de {MIN_DURATION_SEC} a {MAX_DURATION_SEC} segundos, hasta {MAX_CREATIVE_MB} MB. Horizontal, vertical o cuadrado.
         </p>
 
         <div className="mt-4">
@@ -398,7 +398,7 @@ function CreativeStep({
         <input
           ref={inputRef}
           type="file"
-          accept="video/mp4,.mp4"
+          accept="video/mp4,video/quicktime,video/x-m4v,.mp4,.mov,.m4v"
           className="sr-only"
           onChange={(e) => {
             const f = e.target.files?.[0];

@@ -8,7 +8,7 @@ import { ValidationError } from "@/lib/data/context";
 import { badRequest, errorResponse } from "@/lib/http";
 import { isOwnedUploadUrl, LOCAL_UPLOAD_DIR, LOCAL_UPLOAD_ROUTE, storageMode } from "@/lib/storage";
 import { probeMp4 } from "@/lib/video/probe";
-import { MAX_CREATIVE_BYTES } from "@/lib/video/rules";
+import { MAX_CREATIVE_BYTES, MAX_CREATIVE_MB } from "@/lib/video/rules";
 
 const BodySchema = z.object({
   label: z.string().trim().min(1, "Ponle un nombre al video.").max(80),
@@ -27,9 +27,10 @@ async function readUploaded(url: string): Promise<ArrayBuffer> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new ValidationError("No encontramos el video subido.");
   const declared = Number(res.headers.get("content-length") ?? 0);
-  if (declared > MAX_CREATIVE_BYTES) throw new ValidationError("El archivo pesa más de 50 MB.");
+  const tooBig = `El archivo pesa más de ${MAX_CREATIVE_MB} MB.`;
+  if (declared > MAX_CREATIVE_BYTES) throw new ValidationError(tooBig);
   const data = await res.arrayBuffer();
-  if (data.byteLength > MAX_CREATIVE_BYTES) throw new ValidationError("El archivo pesa más de 50 MB.");
+  if (data.byteLength > MAX_CREATIVE_BYTES) throw new ValidationError(tooBig);
   return data;
 }
 
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   try {
     const data = await readUploaded(blobUrl);
     const probe = probeMp4(data);
-    if (!probe) throw new ValidationError("No pudimos leer el video. Debe ser un MP4 válido.");
+    if (!probe) throw new ValidationError("No pudimos leer el video. Prueba con un MP4 o MOV.");
     const creative = await createCreative(orgCtx({ ...viewer, org: viewer.org }), {
       label,
       blobUrl,

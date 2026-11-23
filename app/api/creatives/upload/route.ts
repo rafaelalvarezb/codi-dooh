@@ -8,7 +8,7 @@ import { MAX_CREATIVE_BYTES } from "@/lib/video/rules";
 /**
  * Issues a short-lived presigned URL so the browser uploads straight to
  * Vercel Blob (function bodies are capped at ~4.5 MB). Only signed-in users
- * with an org, only into `creatives/<their org>/`, only MP4/JPEG ≤ 50 MB.
+ * with an org, only into `creatives/<their org>/`, only MP4/JPEG up to MAX_CREATIVE_BYTES.
  */
 export async function POST(request: Request) {
   if (storageMode() !== "blob") {

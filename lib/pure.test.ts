@@ -46,23 +46,46 @@ describe("rotation (smooth weighted round-robin)", () => {
   });
 });
 
+const u32 = (n: number) => {
+  const b = Buffer.alloc(4);
+  b.writeUInt32BE(n);
+  return b;
+};
+
 describe("creative rules", () => {
   const ok = { codec: "avc1.64001f", durationMs: 6000, width: 1920, height: 1080, sizeBytes: 5e6 };
 
-  it("accepts H.264 6/10/15 s within ±0.5 s", () => {
+  it("accepts any H.264 length from 5 to 30 s (±0.5 s)", () => {
     expect(checkCreative(ok).ok).toBe(true);
-    expect(matchDuration(10_400)).toBe(10);
-    expect(matchDuration(14_600)).toBe(15);
-    expect(matchDuration(8_000)).toBeNull();
-    expect(matchDuration(6_600)).toBeNull();
+    expect(matchDuration(6_040)).toBe(6);
+    expect(matchDuration(8_000)).toBe(8);
+    expect(matchDuration(30_060)).toBe(30);
+    expect(matchDuration(4_400)).toBeNull();
+    expect(matchDuration(31_000)).toBeNull();
+    expect(checkCreative({ ...ok, durationMs: 30_040, sizeBytes: 73e6, width: 1080, height: 1920 }).ok).toBe(true);
   });
 
   it("rejects other codecs, heavy files, wrong durations and low resolution", () => {
     expect(isH264("hvc1.1.6.L93")).toBe(false);
     expect(isH264("avc3.640028")).toBe(true);
-    const bad = checkCreative({ codec: "hvc1", durationMs: 30_000, width: 640, height: 360, sizeBytes: 60e6 });
+    const bad = checkCreative({ codec: "hvc1", durationMs: 45_000, width: 640, height: 360, sizeBytes: 120 * 1024 * 1024 });
     expect(bad.ok).toBe(false);
     expect(bad.errors).toHaveLength(4);
+  });
+
+  it("reads MP4s whose metadata mp4box rejects (Premiere ©TIM inside udta)", () => {
+    // Same structure as a Premiere export: moov › udta › ©TIM (timecode atom).
+    const src = readFileSync(path.join(process.cwd(), "public/ads/spot-01.mp4"));
+    const moovAt = src.indexOf(Buffer.from("moov")) - 4;
+    const moovSize = src.readUInt32BE(moovAt);
+    const tim = Buffer.concat([u32(16), Buffer.from([0xa9, 0x54, 0x49, 0x4d]), Buffer.from("00:00:00")]);
+    const udta = Buffer.concat([u32(8 + tim.length), Buffer.from("udta"), tim]);
+    const moov = Buffer.concat([u32(moovSize + udta.length), src.subarray(moovAt + 4, moovAt + moovSize), udta]);
+    const buf = Buffer.concat([src.subarray(0, moovAt), moov, src.subarray(moovAt + moovSize)]);
+    const meta = probeMp4(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer);
+    expect(meta?.codec).toMatch(/^avc1\./);
+    expect(meta?.width).toBeGreaterThan(0);
+    expect(meta?.durationMs).toBeGreaterThan(0);
   });
 
   it("never crops: tells where the black bars go in the 828×768 column", () => {
