@@ -4,14 +4,14 @@
  * the expected file name. Prompts for each: docs/landing-imagenes.md.
  */
 export const LANDING_IMAGES = {
-  "salida-estacionamiento": { ratio: "16/9", alt: "Salida de un estacionamiento de noche con la pluma cerrada" },
-  "paso-escanea": { ratio: "4/5", alt: "Conductora escanea el QR del kiosco desde su auto" },
-  "paso-confirma": { ratio: "4/5", alt: "Mano confirmando un pago en la app del banco" },
-  "paso-sal": { ratio: "4/5", alt: "La pluma se levanta y el auto sale del estacionamiento" },
-  "kiosco-anuncio": { ratio: "16/9", alt: "Kiosco cobten mostrando un anuncio en la caseta de salida" },
-  "marca-audiencia": { ratio: "4/5", alt: "Personas frente a la pantalla del kiosco mientras pagan" },
-  "kiosco-instalado": { ratio: "4/5", alt: "Kiosco cobten instalado en un poste junto a la pluma" },
-  "detalle-hardware": { ratio: "16/9", alt: "Detalle de la tableta y el relevador que abre la pluma" },
+  "estacionamiento-plaza": { ratio: "16/9", alt: "Estacionamiento de una plaza con la zona de máquinas de cobro" },
+  "paso-escanea": { ratio: "4/5", alt: "Una persona escanea el QR CoDi de la pantalla en la máquina de cobro" },
+  "paso-confirma": { ratio: "4/5", alt: "Mano confirmando el pago del boleto en la app del banco" },
+  "paso-sal": { ratio: "4/5", alt: "Con el boleto pagado, la persona camina de regreso a su auto" },
+  "kiosco-anuncio": { ratio: "16/9", alt: "Máquina de cobro con la pantalla cobten mostrando un anuncio" },
+  "marca-audiencia": { ratio: "4/5", alt: "Personas frente a la máquina de cobro mientras pagan su boleto" },
+  "maquina-cobro": { ratio: "4/5", alt: "Máquina de cobro de estacionamiento con la pantalla cobten instalada" },
+  "detalle-hardware": { ratio: "16/9", alt: "Detalle de la pantalla montada en la máquina de cobro y su conexión" },
   "ciudad-noche": { ratio: "21/9", alt: "Ciudad de México de noche vista desde un estacionamiento" },
 } as const;
 

@@ -33,7 +33,7 @@ export default async function LandingPage() {
           qrSvg={qrSvg}
           background={
             <div className="absolute inset-0 opacity-30 [mask-image:linear-gradient(180deg,transparent,black_30%,black_70%,transparent)]">
-              <ImageSlot name="salida-estacionamiento" fill placeholder={false} priority sizes="100vw" />
+              <ImageSlot name="estacionamiento-plaza" fill placeholder={false} priority sizes="100vw" />
             </div>
           }
         />

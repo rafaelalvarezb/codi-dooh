@@ -133,3 +133,18 @@ export const IconPhone = (p: P) => (
     <path d="M11 18.5h2" />
   </Icon>
 );
+
+export const IconTicket = (p: P) => (
+  <Icon {...p}>
+    <path d="M4 6.5h16v3a2.5 2.5 0 000 5v3H4v-3a2.5 2.5 0 000-5z" />
+    <path d="M14 6.5v11" strokeDasharray="1.5 2" />
+  </Icon>
+);
+
+export const IconMachine = (p: P) => (
+  <Icon {...p}>
+    <rect x="5" y="2.5" width="14" height="19" rx="2.5" />
+    <rect x="7.5" y="5" width="9" height="6" rx="1" />
+    <path d="M8.5 14.5h7M8.5 17.5h3" />
+  </Icon>
+);

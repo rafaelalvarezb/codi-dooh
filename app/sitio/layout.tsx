@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     template: "%s · cobten",
   },
   description:
-    "Un kiosco con QR CoDi en la salida de tu estacionamiento: tus clientes pagan con la app de su banco, la pluma se abre sola y tu pantalla gana con anuncios.",
+    "Una pantalla con QR CoDi en la máquina de cobro de tu estacionamiento: quien no trae efectivo paga con la app de su banco, sin comisiones, y tu pantalla gana con anuncios.",
   applicationName: "cobten",
   robots: { index: true, follow: true },
   alternates: { canonical: "/" },

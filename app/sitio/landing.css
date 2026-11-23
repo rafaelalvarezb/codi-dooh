@@ -193,18 +193,40 @@
   z-index: 2;
 }
 
+/* The tablet is mounted on the parking lot's pay station (the machine people
+   already use to pay their ticket). The machine sits behind and below it. */
 .cb-kiosk {
   position: absolute;
   inset: 0;
   transform: perspective(1800px) rotateX(calc((1 - var(--k)) * 26deg));
   transform-origin: 50% 100%;
+}
+
+.cb-machine {
+  position: absolute;
+  top: -6cqw;
+  left: -4cqw;
+  right: -4cqw;
+  height: 118cqw;
+  border-radius: 4cqw 4cqw 2cqw 2cqw;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent 12%, transparent 88%, rgba(255, 255, 255, 0.05)),
+    linear-gradient(180deg, #34353b, #1d1e22 40%, #141417);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.07) inset,
+    0 6cqw 14cqw -2cqw rgba(0, 0, 0, 0.85);
+}
+
+.cb-bezel {
+  position: absolute;
+  inset: 0;
   border-radius: 2.8cqw;
   padding: 1.25cqw;
   background: linear-gradient(180deg, #1c1c20, #0d0d10);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.08) inset,
     0 0 0 0.25cqw #000,
-    0 4cqw 10cqw -2cqw rgba(0, 0, 0, 0.8),
+    0 3cqw 6cqw -1cqw rgba(0, 0, 0, 0.7),
     0 0 12cqw -4cqw rgba(79, 191, 126, calc(var(--approach) * 0.35));
 }
 
@@ -475,35 +497,28 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-.cb-barrier-arm {
-  transform-origin: 9px 30px;
-  transform: rotate(0deg);
-  transition: transform 1.1s var(--cb-ease-out) 0.35s;
-}
-
-.cb-hero[data-stage="done"] .cb-barrier-arm {
-  transform: rotate(-72deg);
-}
-
-.cb-barrier-light {
-  fill: #d12f35;
-  transition: fill 0.3s 0.3s;
-}
-
-.cb-hero[data-stage="done"] .cb-barrier-light {
-  fill: var(--cb-go-bright);
-}
-
-.cb-barrier-label-open,
-.cb-hero[data-stage="done"] .cb-barrier-label-closed {
+/* Ticket chip: pending → paid. */
+.cb-ticket-paid,
+.cb-hero[data-stage="done"] .cb-ticket-pending {
   display: none;
 }
 
-.cb-hero[data-stage="done"] .cb-barrier-label-open {
+.cb-hero[data-stage="done"] .cb-ticket-paid {
   display: inline;
 }
 
-.cb-hero[data-stage="done"] .cb-chip-barrier {
+.cb-ticket-icon {
+  transition:
+    background-color 0.4s var(--cb-ease) 0.3s,
+    color 0.4s var(--cb-ease) 0.3s;
+}
+
+.cb-hero[data-stage="done"] .cb-ticket-icon {
+  background: var(--cb-go-bright);
+  color: var(--cb-ink);
+}
+
+.cb-hero[data-stage="done"] .cb-chip-ticket {
   transform: translateY(-6px);
   border-color: rgba(79, 191, 126, 0.45);
 }
@@ -635,7 +650,7 @@
     --leave-y: -4%;
     --leave-r: -3deg;
   }
-  .cb-chip-barrier {
+  .cb-chip-ticket {
     left: 0 !important;
     bottom: calc(100% + 14px) !important;
     padding: 8px 12px 8px 8px;
@@ -663,45 +678,6 @@
 }
 
 /* ------------------------------------------------- bento micro-motion */
-
-.cb-mini-arm {
-  transform-origin: 14px 46px;
-  animation: cbArm 5s var(--cb-ease-out) infinite;
-}
-
-@keyframes cbArm {
-  0%,
-  20% {
-    transform: rotate(0deg);
-  }
-  35%,
-  75% {
-    transform: rotate(-70deg);
-  }
-  90%,
-  100% {
-    transform: rotate(0deg);
-  }
-}
-
-.cb-mini-light {
-  animation: cbLight 5s steps(1) infinite;
-}
-
-@keyframes cbLight {
-  0%,
-  28% {
-    fill: #d12f35;
-  }
-  30%,
-  80% {
-    fill: #4fbf7e;
-  }
-  82%,
-  100% {
-    fill: #d12f35;
-  }
-}
 
 .cb-live-dot {
   animation: cdPulse 1.8s ease-out infinite;

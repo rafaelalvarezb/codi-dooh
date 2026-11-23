@@ -35,8 +35,8 @@ function Eyebrow({ children, dark = false }: { children: ReactNode; dark?: boole
 const TICKER = [
   "Cobra con CoDi",
   "Sin efectivo",
-  "Sin cajero",
-  "La pluma se abre sola",
+  "Sin comisiones",
+  "Se instala en tu máquina de cobro",
   "Con la app de su banco",
   "Tu pantalla también gana",
 ];
@@ -76,11 +76,11 @@ export function Benefits() {
     <section id="estacionamientos" className="scroll-mt-24 px-4 py-24 sm:px-6 sm:py-32">
       <Container>
         <div className="max-w-3xl" data-reveal>
-          <Eyebrow>Para estacionamientos</Eyebrow>
-          <h2 className="cb-h2 mt-5">Tu salida cobra sola.</h2>
+          <Eyebrow>Para plazas y estacionamientos</Eyebrow>
+          <h2 className="cb-h2 mt-5">Nadie tiene que ir por efectivo.</h2>
           <p className="cb-lead mt-5 max-w-2xl text-[var(--cb-ink-2)]">
-            Sin casetas con fila, sin cambio y sin cortes de caja. Cada boleto se paga con CoDi y cada pago queda
-            registrado.
+            Pasa todos los días: el boleto cuesta $35, la persona trae $20 y tiene que salir a buscar un cajero. Con
+            cobten paga ahí mismo, en la máquina de cobro, desde la app de su banco.
           </p>
         </div>
 
@@ -130,27 +130,41 @@ export function Benefits() {
             data-reveal
             style={d(80)}
           >
-            <svg viewBox="0 0 200 90" className="h-24 w-auto self-start" aria-hidden>
-              <rect x="6" y="40" width="18" height="50" rx="4" fill="#4a4a52" />
-              <circle cx="15" cy="50" r="4" className="cb-mini-light" />
-              <g className="cb-mini-arm">
-                <rect x="10" y="43" width="180" height="8" rx="4" fill="#fff" />
-                <rect x="58" y="43" width="16" height="8" fill="#d12f35" />
-                <rect x="106" y="43" width="16" height="8" fill="#d12f35" />
-                <rect x="154" y="43" width="16" height="8" fill="#d12f35" />
+            <svg viewBox="0 0 120 140" className="h-32 w-auto self-start" aria-hidden>
+              <rect x="10" y="4" width="100" height="136" rx="12" fill="#2a2b30" />
+              <rect x="10" y="4" width="100" height="136" rx="12" fill="none" stroke="rgba(255,255,255,.08)" />
+              <rect x="20" y="16" width="80" height="50" rx="6" fill="#0d0d10" />
+              <rect x="25" y="21" width="44" height="40" rx="3" fill="url(#cbAdGrad)" />
+              <rect x="72" y="21" width="23" height="40" rx="3" fill="#fff" />
+              <rect x="76" y="31" width="15" height="15" rx="1.5" fill="#0a0a0b" />
+              <rect x="79" y="34" width="9" height="9" fill="#fff" />
+              <rect x="81.5" y="36.5" width="4" height="4" fill="#0a0a0b" />
+              <circle cx="83.5" cy="53" r="2.5" className="cb-live-dot" fill="#4fbf7e" />
+              <rect x="24" y="80" width="44" height="12" rx="3" fill="#0b0c0d" />
+              <rect x="24" y="100" width="44" height="4" rx="2" fill="#000" />
+              <rect x="24" y="112" width="44" height="4" rx="2" fill="#000" />
+              <g fill="rgba(255,255,255,.08)">
+                <rect x="76" y="80" width="8" height="7" rx="1.5" /><rect x="87" y="80" width="8" height="7" rx="1.5" />
+                <rect x="76" y="90" width="8" height="7" rx="1.5" /><rect x="87" y="90" width="8" height="7" rx="1.5" />
               </g>
+              <defs>
+                <linearGradient id="cbAdGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stopColor="#ff7a45" />
+                  <stop offset="1" stopColor="#6b4dff" />
+                </linearGradient>
+              </defs>
             </svg>
-            <h3 className="mt-auto pt-10 text-[26px] leading-tight font-semibold tracking-[-0.03em]">La pluma abre sola</h3>
+            <h3 className="mt-auto pt-10 text-[26px] leading-tight font-semibold tracking-[-0.03em]">Va en tu máquina de cobro</h3>
             <p className="mt-3 text-[16px] leading-relaxed text-white/60">
-              Cuando el pago entra, el kiosco le avisa a tu pluma y se levanta. Nadie tiene que apretar un botón.
+              Añadimos la pantalla a la máquina donde ya pagan su boleto y la conectamos. No cambias tu equipo.
             </p>
           </article>
 
-          <SmallCard icon={<IconCash className="size-7" />} title="Sin cajero ni efectivo" delay={0}>
-            Menos filas en la salida y nada de dinero en la caseta al final del día.
+          <SmallCard icon={<IconCash className="size-7" />} title="Sin efectivo, sin vueltas" delay={0}>
+            Quien no trae suficiente efectivo paga ahí mismo. Nada de ir a buscar un cajero y regresar a la máquina.
           </SmallCard>
-          <SmallCard icon={<IconPhone className="size-7" />} title="Con la app de su banco" delay={80}>
-            Tus clientes no descargan nada: pagan con CoDi desde la app del banco que ya usan.
+          <SmallCard icon={<IconPhone className="size-7" />} title="Sin comisiones" delay={80}>
+            Pagan con CoDi desde la app del banco que ya usan: una transferencia, sin descargar nada y sin comisiones.
           </SmallCard>
           <a
             href="#pantalla"
@@ -190,19 +204,19 @@ const STEPS = [
   {
     n: "01",
     title: "Escanea",
-    body: "Tu cliente abre la app de su banco, entra a CoDi y escanea el QR que aparece en el kiosco.",
+    body: "Frente a la máquina de cobro, tu cliente abre la app de su banco y escanea el QR CoDi de la pantalla.",
     image: "paso-escanea",
   },
   {
     n: "02",
     title: "Confirma",
-    body: "Ve el monto exacto de su boleto y confirma el pago. Sin tarjeta y sin efectivo.",
+    body: "Ve el monto exacto de su boleto y confirma. Sin efectivo, sin tarjeta y sin comisiones.",
     image: "paso-confirma",
   },
   {
     n: "03",
     title: "Sale",
-    body: "El pago llega al instante, la pluma se levanta y el kiosco le dice: ya puedes salir.",
+    body: "El pago llega al instante, su boleto queda pagado y la pantalla le dice: ya puedes salir.",
     image: "paso-sal",
   },
 ] as const;
@@ -217,7 +231,7 @@ export function HowItWorks() {
             <h2 className="cb-h2 mt-5">Tres pasos. Cero filas.</h2>
           </div>
           <p className="cb-lead max-w-md text-[var(--cb-ink-2)]">
-            Lo que vive tu cliente en la salida, de principio a fin, en menos de lo que tarda en bajar la ventana.
+            Lo que vive tu cliente frente a la máquina de cobro, de principio a fin, sin ir a buscar efectivo.
           </p>
         </div>
         <ol className="mt-14 grid gap-4 md:grid-cols-3">
@@ -261,7 +275,7 @@ export function ScreenIncome() {
             <Eyebrow dark>Ingresos extra</Eyebrow>
             <h2 className="cb-h2 mt-5">Tu pantalla también gana.</h2>
             <p className="cb-lead mt-5 max-w-xl text-white/65">
-              Mientras nadie está pagando, el kiosco pasa anuncios de marcas. Tú recibes el 70% de lo que pagan, cada
+              Mientras nadie está pagando, la pantalla pasa anuncios de marcas. Tú recibes el 70% de lo que pagan, cada
               mes, en tu cuenta.
             </p>
             <dl className="mt-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-8">
@@ -350,8 +364,8 @@ export function Advertisers() {
               <Eyebrow>Para marcas</Eyebrow>
               <h2 className="cb-h2 mt-5">Anúnciate donde la gente paga.</h2>
               <p className="cb-lead mt-5 text-[var(--cb-ink-2)]">
-                Tu video corre en el kiosco justo cuando alguien saca su celular. Y te decimos cuántas personas pagaron
-                mientras pasaba tu anuncio.
+                Tu video corre en la máquina de cobro de la plaza, justo cuando alguien saca su celular para pagar. Y te
+                decimos cuántas personas pagaron mientras pasaba tu anuncio.
               </p>
             </div>
 
@@ -400,7 +414,7 @@ export function Advertisers() {
 
             <ul className="mt-8 space-y-3 text-[16px]" data-reveal style={d(160)}>
               {[
-                "Sube tu video y míralo tal como se verá en el kiosco.",
+                "Sube tu video y míralo tal como se verá en la pantalla.",
                 "Elige pantallas y fechas; el precio lo ves antes de publicar.",
                 "Publica y en menos de un minuto ya está al aire.",
               ].map((t) => (
@@ -438,13 +452,13 @@ export function Hardware() {
   const items = [
     {
       icon: <IconTablet className="size-6" />,
-      title: "Tableta horizontal",
-      body: "El cobro CoDi a la derecha y los anuncios a la izquierda, siempre encendida.",
+      title: "Pantalla para tu máquina",
+      body: "Se monta en tu máquina de cobro: el QR CoDi a la derecha y los anuncios a la izquierda.",
     },
     {
       icon: <IconRelay className="size-6" />,
-      title: "Relevador para la pluma",
-      body: "Se conecta a tu pluma para levantarla en cuanto entra el pago.",
+      title: "Conexión con la máquina",
+      body: "La conectamos a tu máquina de cobro para que reconozca el pago CoDi de cada boleto.",
     },
     {
       icon: <IconWifi className="size-6" />,
@@ -458,12 +472,12 @@ export function Hardware() {
         <div className="overflow-hidden rounded-[36px] bg-[var(--cb-card)] p-3 sm:p-4">
           <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1.1fr_1fr]">
             <div data-reveal>
-              <ImageSlot name="kiosco-instalado" className="rounded-[26px]" />
+              <ImageSlot name="maquina-cobro" className="rounded-[26px]" />
             </div>
             <div className="flex flex-col gap-3 sm:gap-4">
               <div className="px-4 pt-6 pb-2 sm:px-6 sm:pt-8" data-reveal>
                 <Eyebrow>El equipo</Eyebrow>
-                <h2 className="cb-h2 mt-5">Todo lo que va en tu salida.</h2>
+                <h2 className="cb-h2 mt-5">Todo lo que va en tu máquina de cobro.</h2>
               </div>
               <ul className="grid gap-1 px-2 sm:px-4">
                 {items.map((it, i) => (
@@ -499,16 +513,20 @@ const FAQ = [
     a: "No. Pagan desde la app del banco que ya tienen, en la opción de CoDi o de pagar con QR. Ojo: la cámara normal del celular no lee códigos CoDi.",
   },
   {
+    q: "¿Mis clientes pagan comisión?",
+    a: "No. CoDi es una transferencia desde la app de su banco, sin comisiones para quien paga.",
+  },
+  {
     q: "¿Qué bancos funcionan?",
     a: "Cualquier banco que tenga CoDi en su app. Normalmente está en Transferir, como CoDi o Pagar con QR.",
   },
   {
-    q: "¿Funciona con mi pluma actual?",
-    a: "En la demo revisamos tu pluma y tu caseta. El kiosco usa un relevador que le da la señal de abrir cuando entra el pago.",
+    q: "¿Tengo que cambiar mi máquina de cobro?",
+    a: "No. Añadimos la pantalla a tu máquina actual y la conectamos. En la demo revisamos tu modelo de máquina.",
   },
   {
     q: "¿Qué pasa si se va el internet?",
-    a: "Los anuncios siguen corriendo con lo último que se descargó. Para cobrar con CoDi sí se necesita conexión; mientras vuelve, el kiosco avisa que CoDi no está disponible.",
+    a: "Los anuncios siguen corriendo con lo último que se descargó. Para cobrar con CoDi sí se necesita conexión; mientras vuelve, la pantalla avisa que CoDi no está disponible y la máquina sigue cobrando como siempre.",
   },
   {
     q: "¿Cómo se pagan los anuncios?",
@@ -516,7 +534,7 @@ const FAQ = [
   },
   {
     q: "¿Cuánto cuesta?",
-    a: "Depende de cuántas salidas y cajones tengas. Agenda una demo y te damos una propuesta para tu estacionamiento.",
+    a: "Depende de cuántas máquinas de cobro y cajones tengas. Agenda una demo y te damos una propuesta para tu estacionamiento.",
   },
 ];
 
@@ -571,12 +589,12 @@ export function DemoCta() {
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div data-reveal>
             <CobtenSymbol tone="white" className="h-16 w-auto" />
-            <h2 className="cb-h2 mt-10">Que tu salida cobre sola.</h2>
+            <h2 className="cb-h2 mt-10">Que nadie tenga que ir por efectivo.</h2>
             <p className="cb-lead mt-5 max-w-md text-white/65">
               Déjanos tus datos y te mostramos cobten funcionando, con un pago real.
             </p>
             <ul className="mt-8 space-y-3 text-[16px] text-white/80">
-              {["Revisamos tu salida y tu pluma", "Te damos una propuesta para tus cajones", "Sin compromiso"].map((t) => (
+              {["Revisamos tu máquina de cobro", "Te damos una propuesta para tu estacionamiento", "Sin compromiso"].map((t) => (
                 <li key={t} className="flex gap-3">
                   <IconCheck className="mt-0.5 size-5 shrink-0 text-[var(--cb-go-bright)]" />
                   {t}
