@@ -5,6 +5,9 @@
  * - "none": production without Blob configured (uploads disabled).
  */
 import path from "node:path";
+import { SOURCE_EXT_RE } from "./storage-paths";
+
+export { SOURCE_EXTENSIONS, sourceExtension } from "./storage-paths";
 
 export type StorageMode = "blob" | "local" | "none";
 
@@ -30,19 +33,24 @@ export function orgUploadPrefix(orgId: string): string {
 }
 
 /**
+ * Originals the browser uploads go to `creatives/<org>/src/`; the server
+ * converts them and writes the kiosk MP4 + poster next to that folder.
+ */
+export function orgSourcePrefix(orgId: string): string {
+  return `${orgUploadPrefix(orgId)}src/`;
+}
+
+/**
  * Accepts only files uploaded by this org into our own store, so nobody can
  * attach someone else's video or a URL they can swap after review.
  */
-export function isOwnedUploadUrl(url: string, orgId: string, ext: "mp4" | "jpg"): boolean {
-  const prefix = orgUploadPrefix(orgId);
+export function isOwnedUploadUrl(url: string, orgId: string, kind: "source" | "mp4" | "jpg"): boolean {
+  const prefix = kind === "source" ? orgSourcePrefix(orgId) : orgUploadPrefix(orgId);
+  const extRe = kind === "source" ? SOURCE_EXT_RE : new RegExp(`\\.${kind}$`, "i");
   const mode = storageMode();
   if (mode === "local") {
     const expected = `${LOCAL_UPLOAD_ROUTE}/${prefix}`;
-    return (
-      url.startsWith(expected) &&
-      !url.includes("..") &&
-      new RegExp(`\\.${ext}$`, "i").test(url)
-    );
+    return url.startsWith(expected) && !url.includes("..") && extRe.test(url);
   }
   if (mode !== "blob") return false;
   let parsed: URL;
@@ -57,17 +65,17 @@ export function isOwnedUploadUrl(url: string, orgId: string, ext: "mp4" | "jpg")
     parsed.hostname.endsWith(".public.blob.vercel-storage.com") &&
     (!host || parsed.hostname.startsWith(`${host}.`)) &&
     parsed.pathname.startsWith(`/${prefix}`) &&
-    new RegExp(`\\.${ext}$`, "i").test(parsed.pathname)
+    extRe.test(parsed.pathname)
   );
 }
 
+/** What the browser may upload: originals only, into its own org's src/ folder. */
 export function isAllowedUploadPathname(pathname: string, orgId: string): boolean {
-  const prefix = orgUploadPrefix(orgId);
   return (
-    pathname.startsWith(prefix) &&
+    pathname.startsWith(orgSourcePrefix(orgId)) &&
     !pathname.includes("..") &&
     /^[a-z0-9/_.-]+$/i.test(pathname) &&
-    /\.(mp4|jpg)$/i.test(pathname) &&
+    SOURCE_EXT_RE.test(pathname) &&
     pathname.length <= 200
   );
 }

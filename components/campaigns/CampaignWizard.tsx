@@ -5,9 +5,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { KioskPreview } from "@/components/dooh/KioskPreview";
 import { DemoBadge } from "@/components/app/DemoBadge";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
-import { capturePoster, inspectFile, uploadCreative, type UploadMode } from "@/lib/client/creative-upload";
+import { precheck, readSourceMeta, uploadSource, type UploadMode } from "@/lib/client/creative-upload";
 import { campaignMarketValueCents, formatMxn } from "@/lib/pricing";
-import { letterboxFor, MAX_CREATIVE_BYTES, MAX_CREATIVE_MB, MAX_DURATION_SEC, MIN_DURATION_SEC, type CreativeCheck, type Letterbox } from "@/lib/video/rules";
+import { letterboxFor, MAX_CREATIVE_MB, MAX_DURATION_SEC, MIN_DURATION_SEC, type Letterbox } from "@/lib/video/rules";
 
 export type WizardScreen = {
   id: string;
@@ -306,57 +306,47 @@ function CreativeStep({
   onChange: (c: WizardCreative | null) => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [phase, setPhase] = useState<"idle" | "checking" | "uploading" | "saving">("idle");
+  const [phase, setPhase] = useState<"idle" | "checking" | "uploading" | "processing">("idle");
   const [progress, setProgress] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
-  const [check, setCheck] = useState<CreativeCheck | null>(null);
   const [localPreview, setLocalPreview] = useState<{ src: string; letterbox: Letterbox } | null>(null);
   const busy = phase !== "idle";
 
   async function onFile(file: File) {
     setErrors([]);
-    setCheck(null);
+    setLocalPreview(null);
     onChange(null);
-    if (file.size > MAX_CREATIVE_BYTES) {
-      setErrors([`El archivo pesa más de ${MAX_CREATIVE_MB} MB.`]);
-      return;
-    }
     setPhase("checking");
-    const inspected = await inspectFile(file);
-    if (!inspected.meta || !inspected.check) {
+    // The browser may not decode every format; the server converts and re-checks.
+    const meta = await readSourceMeta(file);
+    const problems = precheck(file, meta);
+    if (problems.length) {
       setPhase("idle");
-      setErrors(["No pudimos leer el video. Prueba con un MP4 o MOV."]);
+      setErrors(problems);
       return;
     }
-    setCheck(inspected.check);
-    if (!inspected.check.ok) {
-      setPhase("idle");
-      setErrors(inspected.check.errors);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(file);
-    setLocalPreview({ src: objectUrl, letterbox: inspected.check.letterbox });
+    if (meta) setLocalPreview({ src: URL.createObjectURL(file), letterbox: letterboxFor(meta.width, meta.height) });
 
     try {
       setPhase("uploading");
       setProgress(0);
-      const poster = await capturePoster(file);
-      const uploaded = await uploadCreative({ file, poster, orgId, mode: uploadMode, onProgress: setProgress });
-      setPhase("saving");
-      const label = (defaultLabel.trim() || file.name.replace(/\.(mp4|m4v|mov)$/i, "")).slice(0, 80);
+      const sourceUrl = await uploadSource({ file, orgId, mode: uploadMode, onProgress: setProgress });
+      setPhase("processing");
+      const label = (defaultLabel.trim() || file.name.replace(/\.[a-z0-9]{2,4}$/i, "")).slice(0, 80);
       const res = await fetch("/api/creatives", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, blobUrl: uploaded.videoUrl, posterUrl: uploaded.posterUrl }),
+        body: JSON.stringify({ label, sourceUrl }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         creative?: { id: string; label: string; blobUrl: string; posterUrl: string | null; durationMs: number; width: number; height: number };
       };
-      if (!res.ok || !data.creative) throw new Error(data.error ?? "No se pudo guardar el video.");
+      if (!res.ok || !data.creative) throw new Error(data.error ?? "No se pudo preparar el video.");
       const c = data.creative;
       onChange({ id: c.id, label: c.label, src: c.blobUrl, poster: c.posterUrl, durationMs: c.durationMs, width: c.width, height: c.height });
     } catch (err) {
+      setLocalPreview(null);
       setErrors([err instanceof Error ? err.message : "No se pudo subir el video."]);
     } finally {
       setPhase("idle");
@@ -364,14 +354,14 @@ function CreativeStep({
   }
 
   const preview = value ? { src: value.src, poster: value.poster } : localPreview ? { src: localPreview.src, poster: null } : null;
-  const bars: Letterbox | null = value ? letterboxFor(value.width, value.height) : (localPreview?.letterbox ?? check?.letterbox ?? null);
+  const bars: Letterbox | null = value ? letterboxFor(value.width, value.height) : (localPreview?.letterbox ?? null);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
         <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Sube tu video</h2>
         <p className="mt-1 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
-          MP4 o MOV de {MIN_DURATION_SEC} a {MAX_DURATION_SEC} segundos, hasta {MAX_CREATIVE_MB} MB. Horizontal, vertical o cuadrado.
+          Cualquier video de {MIN_DURATION_SEC} a {MAX_DURATION_SEC} segundos, hasta {MAX_CREATIVE_MB} MB: MP4, MOV (iPhone), WebM… Horizontal, vertical o cuadrado. Nosotros lo preparamos para el kiosco.
         </p>
 
         <div className="mt-4">
@@ -398,7 +388,7 @@ function CreativeStep({
         <input
           ref={inputRef}
           type="file"
-          accept="video/mp4,video/quicktime,video/x-m4v,.mp4,.mov,.m4v"
+          accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi"
           className="sr-only"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -411,12 +401,16 @@ function CreativeStep({
           <div className="mt-4" role="status" aria-live="polite">
             <div className="h-1.5 overflow-hidden rounded-full bg-[var(--cd-line)]">
               <div
-                className="h-full bg-[var(--cd-ink)] transition-[width]"
-                style={{ width: `${phase === "checking" ? 8 : phase === "saving" ? 100 : Math.max(8, progress)}%` }}
+                className={`h-full bg-[var(--cd-ink)] transition-[width] ${phase === "processing" ? "animate-pulse" : ""}`}
+                style={{ width: `${phase === "checking" ? 8 : phase === "processing" ? 100 : Math.max(8, progress)}%` }}
               />
             </div>
             <p className="mt-2 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
-              {phase === "checking" ? "Revisando el video…" : phase === "uploading" ? `Subiendo… ${Math.round(progress)}%` : "Verificando en el servidor…"}
+              {phase === "checking"
+                ? "Revisando el video…"
+                : phase === "uploading"
+                  ? `Subiendo… ${Math.round(progress)}%`
+                  : "Preparando tu video para el kiosco. Puede tardar hasta un minuto; no cierres esta página."}
             </p>
           </div>
         ) : null}

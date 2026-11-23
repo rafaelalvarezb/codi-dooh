@@ -1,50 +1,50 @@
 "use client";
 
-import { checkCreative, type CreativeCheck, type VideoMeta } from "@/lib/video/rules";
+import { sourceExtension } from "@/lib/storage-paths";
+import { checkSource } from "@/lib/video/rules";
 
 export type UploadMode = "blob" | "local" | "none";
 
-/** Reads codec/duration/size in the browser for instant feedback (server re-checks). */
-export async function inspectFile(file: File): Promise<{ meta: VideoMeta | null; check: CreativeCheck | null }> {
-  // MP4 and QuickTime (.mov/.m4v) share the same box structure.
-  if (!/\.(mp4|m4v|mov)$/i.test(file.name) && !/^video\/(mp4|quicktime|x-m4v)$/.test(file.type)) {
-    return { meta: null, check: null };
-  }
-  const { probeMp4 } = await import("@/lib/video/probe");
-  const probe = probeMp4(await file.arrayBuffer());
-  if (!probe) return { meta: null, check: null };
-  const meta: VideoMeta = { ...probe, sizeBytes: file.size };
-  return { meta, check: checkCreative(meta) };
-}
+export type SourceMeta = { durationMs: number; width: number; height: number };
 
-/** Grabs a frame (~1 s in) as a JPEG: thumbnail + blurred backdrop for portrait spots. */
-export async function capturePoster(file: File): Promise<Blob | null> {
+/**
+ * Reads duration and size with the browser's own player, for instant feedback.
+ * Returns null when this browser can't decode the file (e.g. MKV, or HEVC on
+ * some systems): it still uploads, and the server converts and re-checks it.
+ */
+export async function readSourceMeta(file: File): Promise<SourceMeta | null> {
   const url = URL.createObjectURL(file);
   try {
     const video = document.createElement("video");
     video.muted = true;
-    video.playsInline = true;
-    video.preload = "auto";
+    video.preload = "metadata";
     video.src = url;
     await new Promise<void>((resolve, reject) => {
-      video.onloadeddata = () => resolve();
-      video.onerror = () => reject(new Error("load"));
+      const t = setTimeout(() => reject(new Error("timeout")), 8000);
+      video.onloadedmetadata = () => {
+        clearTimeout(t);
+        resolve();
+      };
+      video.onerror = () => {
+        clearTimeout(t);
+        reject(new Error("decode"));
+      };
     });
-    video.currentTime = Math.min(1, (video.duration || 2) / 2);
-    await new Promise<void>((resolve) => {
-      video.onseeked = () => resolve();
-    });
-    const scale = Math.min(1, 720 / Math.max(video.videoWidth, video.videoHeight));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(video.videoWidth * scale);
-    canvas.height = Math.round(video.videoHeight * scale);
-    canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+    if (!Number.isFinite(video.duration) || !video.videoWidth) return null;
+    return { durationMs: Math.round(video.duration * 1000), width: video.videoWidth, height: video.videoHeight };
   } catch {
     return null;
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** Browser-side checks on the original (server repeats them). */
+export function precheck(file: File, meta: SourceMeta | null): string[] {
+  if (!file.type.startsWith("video/") && !/\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name)) {
+    return ["Ese archivo no es un video."];
+  }
+  return checkSource({ durationMs: meta?.durationMs ?? 10_000, width: meta?.width ?? 0, height: meta?.height ?? 0, sizeBytes: file.size });
 }
 
 function slug(): string {
@@ -76,21 +76,17 @@ async function putFile(
   return result.url;
 }
 
-export async function uploadCreative(opts: {
+/** Uploads the original as-is into creatives/<org>/src/; returns its URL. */
+export async function uploadSource(opts: {
   file: File;
-  poster: Blob | null;
   orgId: string;
   mode: UploadMode;
   onProgress?: (pct: number) => void;
-}): Promise<{ videoUrl: string; posterUrl: string | null }> {
-  const base = `creatives/${opts.orgId}/${slug()}`;
-  const videoUrl = await putFile(opts.mode, `${base}.mp4`, opts.file, "video/mp4", (pct) =>
-    opts.onProgress?.(Math.min(95, pct * 0.95)),
-  );
-  let posterUrl: string | null = null;
-  if (opts.poster) {
-    posterUrl = await putFile(opts.mode, `${base}-poster.jpg`, opts.poster, "image/jpeg").catch(() => null);
-  }
+}): Promise<string> {
+  const ext = sourceExtension(opts.file.name);
+  const pathname = `creatives/${opts.orgId}/src/${slug()}.${ext}`;
+  const contentType = opts.file.type || "application/octet-stream";
+  const url = await putFile(opts.mode, pathname, opts.file, contentType, opts.onProgress);
   opts.onProgress?.(100);
-  return { videoUrl, posterUrl };
+  return url;
 }

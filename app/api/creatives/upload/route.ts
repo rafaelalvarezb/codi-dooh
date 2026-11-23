@@ -5,10 +5,21 @@ import { getViewer } from "@/lib/auth/dal";
 import { isAllowedUploadPathname, storageMode } from "@/lib/storage";
 import { MAX_CREATIVE_BYTES } from "@/lib/video/rules";
 
+const SOURCE_CONTENT_TYPES = [
+  "video/mp4",
+  "video/quicktime",
+  "video/x-m4v",
+  "video/webm",
+  "video/x-matroska",
+  "video/x-msvideo",
+  "video/avi",
+  "application/octet-stream",
+] as const;
+
 /**
  * Issues a short-lived presigned URL so the browser uploads straight to
  * Vercel Blob (function bodies are capped at ~4.5 MB). Only signed-in users
- * with an org, only into `creatives/<their org>/`, only MP4/JPEG up to MAX_CREATIVE_BYTES.
+ * with an org, only originals into `creatives/<their org>/src/`, up to MAX_CREATIVE_BYTES.
  */
 export async function POST(request: Request) {
   if (storageMode() !== "blob") {
@@ -27,9 +38,9 @@ export async function POST(request: Request) {
         const viewer = await getViewer();
         if (!viewer?.org) throw new Error("UNAUTHORIZED");
         if (!isAllowedUploadPathname(pathname, viewer.org.id)) throw new Error("FORBIDDEN_PATH");
-        const isVideo = pathname.toLowerCase().endsWith(".mp4");
-        const allowedContentTypes = isVideo ? ["video/mp4"] : ["image/jpeg"];
-        const maximumSizeInBytes = isVideo ? MAX_CREATIVE_BYTES : 2 * 1024 * 1024;
+        // Originals of any common video type; the server converts them.
+        const allowedContentTypes = [...SOURCE_CONTENT_TYPES];
+        const maximumSizeInBytes = MAX_CREATIVE_BYTES;
         const validUntil = Date.now() + 10 * 60 * 1000;
         const token = await issueSignedToken({
           pathname,

@@ -3,7 +3,8 @@
  * (authoritative re-validation). Pure.
  */
 
-export const MAX_CREATIVE_BYTES = 100 * 1024 * 1024;
+/** Largest original we accept; the server converts it to a ~5–12 MB kiosk MP4. */
+export const MAX_CREATIVE_BYTES = 250 * 1024 * 1024;
 export const MAX_CREATIVE_MB = MAX_CREATIVE_BYTES / 1024 / 1024;
 /** Any length in this range (common spots: 6, 10, 15, 20, 30 s). */
 export const MIN_DURATION_SEC = 5;
@@ -68,6 +69,26 @@ export function matchDuration(durationMs: number): number | null {
   const max = MAX_DURATION_SEC * 1000 + DURATION_TOLERANCE_MS;
   if (durationMs < min || durationMs > max) return null;
   return Math.min(MAX_DURATION_SEC, Math.max(MIN_DURATION_SEC, Math.round(durationMs / 1000)));
+}
+
+/**
+ * Checks on the original, before conversion (any codec/container: the server
+ * turns it into H.264). Same messages in the browser and on the server.
+ */
+export function checkSource(meta: { durationMs: number; width: number; height: number; sizeBytes: number }): string[] {
+  const errors: string[] = [];
+  if (meta.sizeBytes > MAX_CREATIVE_BYTES) errors.push(`El archivo pesa más de ${MAX_CREATIVE_MB} MB.`);
+  if (matchDuration(meta.durationMs) === null) {
+    errors.push(
+      `Dura ${(meta.durationMs / 1000).toFixed(1)} s. Debe durar entre ${MIN_DURATION_SEC} y ${MAX_DURATION_SEC} segundos.`,
+    );
+  }
+  if (meta.width > 0 && meta.height > 0 && Math.min(meta.width, meta.height) < MIN_SHORT_SIDE_PX) {
+    errors.push(
+      `La resolución es ${meta.width}×${meta.height}. El lado corto debe medir al menos ${MIN_SHORT_SIDE_PX} px.`,
+    );
+  }
+  return errors;
 }
 
 export function checkCreative(meta: VideoMeta): CreativeCheck {
