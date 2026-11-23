@@ -3,6 +3,7 @@ import { clientIp, rateLimit } from "@/lib/auth/rate-limit";
 import { createLead } from "@/lib/data/leads";
 import { badRequest, errorResponse } from "@/lib/http";
 import { LeadSchema } from "@/lib/leads-schema";
+import { notifyNewLead } from "@/lib/notifications";
 
 const MAX_BODY_BYTES = 4 * 1024;
 const LIMIT_PER_HOUR = 5;
@@ -33,8 +34,10 @@ export async function POST(request: Request) {
   }
   try {
     await createLead(data);
-    return NextResponse.json({ ok: true }, { status: 201 });
   } catch (err) {
     return errorResponse(err, "leads");
   }
+  // The request is saved either way; a failed email only gets logged.
+  await notifyNewLead(data).catch((err) => console.error("[leads] notify", err));
+  return NextResponse.json({ ok: true }, { status: 201 });
 }

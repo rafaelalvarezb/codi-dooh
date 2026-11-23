@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
@@ -47,6 +48,9 @@ export function LoginForm() {
       <Field label="Contraseña">
         <TextInput name="password" type="password" required autoComplete="current-password" />
       </Field>
+      <Link href="/recuperar" className="-mt-2 self-start text-[length:var(--cd-small)] text-[var(--cd-muted)] underline underline-offset-4 hover:text-[var(--cd-ink)]">
+        ¿Olvidaste tu contraseña?
+      </Link>
       <FormError>{error}</FormError>
       <Button type="submit" disabled={loading}>
         {loading ? "Entrando…" : "Entrar"}
