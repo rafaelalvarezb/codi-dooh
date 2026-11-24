@@ -3,6 +3,8 @@ import { Card, EmptyState, PageHeader } from "@/components/app/Page";
 import { LeadStatusButton } from "@/components/admin/AdminActions";
 import { requireViewer } from "@/lib/auth/dal";
 import { listLeads } from "@/lib/data/leads";
+import { emailConfigured } from "@/lib/email";
+import { leadsRecipient } from "@/lib/notifications";
 
 export const metadata: Metadata = { title: "Contactos · Admin · cobten", robots: { index: false } };
 
@@ -22,6 +24,8 @@ export default async function Page() {
   await requireViewer("admin", "/admin/contactos");
   const leads = await listLeads();
   const fresh = leads.filter((l) => l.status === "new").length;
+  const recipient = leadsRecipient();
+  const notifying = emailConfigured() && recipient;
   return (
     <main>
       <PageHeader
@@ -33,6 +37,15 @@ export default async function Page() {
             : "Solicitudes de demo que llegan desde el formulario de cobten.com."
         }
       />
+      <p
+        className={`mt-6 rounded-[var(--cd-radius-md)] px-4 py-3 text-[length:var(--cd-small)] ${
+          notifying ? "bg-[var(--cd-success-soft)] text-[var(--cd-ink)]" : "bg-[var(--cd-surface)] text-[var(--cd-ink-2)] ring-1 ring-[var(--cd-line)]"
+        }`}
+      >
+        {notifying
+          ? `Te avisamos por correo a ${recipient} en cuanto llega una solicitud.`
+          : "Los avisos por correo aún no están activos. Mientras tanto, revisa esta página."}
+      </p>
       {leads.length === 0 ? (
         <div className="mt-8">
           <EmptyState
