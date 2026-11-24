@@ -394,11 +394,17 @@ export function Advertisers() {
             <div className="mt-9 flex flex-wrap gap-3" data-reveal style={d(160)}>
               <AdvertiserExperience videoSrc={videoSrc} posterSrc={posterSrc} />
               <a
-                href="/registro"
+                href="/probar"
                 className="inline-flex h-12 items-center gap-2 rounded-full border border-[var(--cb-line)] bg-white px-6 text-[15px] font-medium transition hover:border-[var(--cb-ink)]"
               >
-                Crear campaña
+                Probar como anunciante
                 <IconArrow className="size-4" />
+              </a>
+              <a
+                href="/registro"
+                className="inline-flex h-12 items-center gap-2 px-2 text-[15px] font-medium underline-offset-4 transition hover:underline"
+              >
+                Crear campaña
               </a>
             </div>
           </div>
