@@ -5,9 +5,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { KioskPreview } from "@/components/dooh/KioskPreview";
 import { DemoBadge } from "@/components/app/DemoBadge";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
-import { precheck, readSourceMeta, uploadSource, type UploadMode } from "@/lib/client/creative-upload";
+import { isImageFile, precheck, readSourceMeta, uploadSource, type UploadMode } from "@/lib/client/creative-upload";
+import { TrimPicker } from "./TrimPicker";
 import { campaignMarketValueCents, formatMxn } from "@/lib/pricing";
-import { letterboxFor, MAX_CREATIVE_MB, MAX_DURATION_SEC, MIN_DURATION_SEC, type Letterbox } from "@/lib/video/rules";
+import { letterboxFor, MAX_CREATIVE_MB, MAX_DURATION_SEC, MIN_DURATION_SEC, needsTrim, type Letterbox } from "@/lib/video/rules";
 
 export type WizardScreen = {
   id: string;
@@ -310,23 +311,35 @@ function CreativeStep({
   const [progress, setProgress] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [localPreview, setLocalPreview] = useState<{ src: string; letterbox: Letterbox } | null>(null);
+  /** A video longer than a spot, waiting for the advertiser to pick its 15 s. */
+  const [toTrim, setToTrim] = useState<{ file: File; src: string; durationMs: number } | null>(null);
+  const [trimStart, setTrimStart] = useState(0);
   const busy = phase !== "idle";
 
   async function onFile(file: File) {
     setErrors([]);
     setLocalPreview(null);
+    setToTrim(null);
     onChange(null);
     setPhase("checking");
     // The browser may not decode every format; the server converts and re-checks.
     const meta = await readSourceMeta(file);
     const problems = precheck(file, meta);
+    setPhase("idle");
     if (problems.length) {
-      setPhase("idle");
       setErrors(problems);
       return;
     }
-    if (meta) setLocalPreview({ src: URL.createObjectURL(file), letterbox: letterboxFor(meta.width, meta.height) });
+    if (meta && !meta.image && needsTrim(meta.durationMs)) {
+      setTrimStart(0);
+      setToTrim({ file, src: URL.createObjectURL(file), durationMs: meta.durationMs });
+      return;
+    }
+    await upload(file, meta && !isImageFile(file) ? letterboxFor(meta.width, meta.height) : null);
+  }
 
+  async function upload(file: File, letterbox: Letterbox | null, trimStartMs?: number) {
+    if (letterbox) setLocalPreview({ src: URL.createObjectURL(file), letterbox });
     try {
       setPhase("uploading");
       setProgress(0);
@@ -336,7 +349,7 @@ function CreativeStep({
       const res = await fetch("/api/creatives", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, sourceUrl }),
+        body: JSON.stringify({ label, sourceUrl, trimStartMs }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
@@ -344,6 +357,7 @@ function CreativeStep({
       };
       if (!res.ok || !data.creative) throw new Error(data.error ?? "No se pudo preparar el video.");
       const c = data.creative;
+      setToTrim(null);
       onChange({ id: c.id, label: c.label, src: c.blobUrl, poster: c.posterUrl, durationMs: c.durationMs, width: c.width, height: c.height });
     } catch (err) {
       setLocalPreview(null);
@@ -359,13 +373,34 @@ function CreativeStep({
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
-        <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Sube tu video</h2>
+        <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Sube tu video o imagen</h2>
         <p className="mt-1 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
-          Cualquier video de {MIN_DURATION_SEC} a {MAX_DURATION_SEC} segundos, hasta {MAX_CREATIVE_MB} MB: MP4, MOV (iPhone), WebM… Horizontal, vertical o cuadrado. Nosotros lo preparamos para el kiosco.
+          Video de {MIN_DURATION_SEC} a {MAX_DURATION_SEC} segundos o una imagen (se muestra {MAX_DURATION_SEC} s), hasta {MAX_CREATIVE_MB} MB. Si
+          tu video es más largo, eliges qué parte se ve. Horizontal, vertical o cuadrado: nosotros lo preparamos para el kiosco.
         </p>
 
         <div className="mt-4">
-          {preview ? (
+          {toTrim && !value ? (
+            <div>
+              <TrimPicker
+                src={toTrim.src}
+                durationMs={toTrim.durationMs}
+                windowMs={MAX_DURATION_SEC * 1000}
+                startMs={trimStart}
+                onChange={setTrimStart}
+              />
+              {!busy ? (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Button type="button" onClick={() => void upload(toTrim.file, null, trimStart)}>
+                    Usar este tramo
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => inputRef.current?.click()}>
+                    Elegir otro archivo
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : preview ? (
             <KioskPreview src={preview.src} poster={preview.poster} />
           ) : (
             <button
@@ -379,7 +414,7 @@ function CreativeStep({
               }}
               className="flex aspect-[16/10] w-full flex-col items-center justify-center gap-2 rounded-[var(--cd-radius-md)] border-2 border-dashed border-[var(--cd-line)] bg-[var(--cd-surface)] px-6 text-center hover:border-[var(--cd-subtle)]"
             >
-              <span className="text-[length:var(--cd-body)] font-medium">Arrastra tu video aquí</span>
+              <span className="text-[length:var(--cd-body)] font-medium">Arrastra tu video o imagen aquí</span>
               <span className="text-[length:var(--cd-small)] text-[var(--cd-muted)]">o haz clic para elegirlo</span>
             </button>
           )}
@@ -388,7 +423,7 @@ function CreativeStep({
         <input
           ref={inputRef}
           type="file"
-          accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi"
+          accept="video/*,image/jpeg,image/png,image/webp,.mp4,.mov,.m4v,.webm,.mkv,.avi,.jpg,.jpeg,.png,.webp"
           className="sr-only"
           onChange={(e) => {
             const f = e.target.files?.[0];

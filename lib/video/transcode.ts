@@ -54,8 +54,10 @@ function run(args: string[], timeoutMs: number): Promise<{ code: number; stderr:
 export function parseSourceInfo(stderr: string): SourceInfo | null {
   const dur = stderr.match(/Duration:\s*(\d+):(\d{2}):(\d{2}(?:\.\d+)?)/);
   const video = stderr.match(/Stream #\d+:\d+[^\n]*?: Video: ([a-z0-9_]+)[^\n]*?(\d{2,5})x(\d{2,5})/i);
-  if (!dur || !video) return null;
-  const durationMs = Math.round((Number(dur[1]) * 3600 + Number(dur[2]) * 60 + Number(dur[3])) * 1000);
+  if (!video) return null;
+  // Still images report "Duration: N/A" (or a single frame); callers know they're images.
+  const durationMs = dur ? Math.round((Number(dur[1]) * 3600 + Number(dur[2]) * 60 + Number(dur[3])) * 1000) : 0;
+  if (!dur && !/Duration:\s*N\/A/.test(stderr)) return null;
   let width = Number(video[2]);
   let height = Number(video[3]);
   // Phones record landscape pixels plus a rotation; ffmpeg auto-rotates on output.
@@ -69,13 +71,30 @@ export async function inspectSource(file: string): Promise<SourceInfo | null> {
   return parseSourceInfo(stderr);
 }
 
+export type CutOptions = {
+  /** Start of the cut in ms (videos longer than a spot). */
+  trimStartMs?: number;
+  /** Length of the output in seconds (cut videos and images). */
+  durationSec?: number;
+  /** The source is a still image: loop it into a video. */
+  image?: boolean;
+};
+
 /** ffmpeg arguments for the kiosk rendition. Pure; exported for tests. */
-export function kioskArgs(input: string, output: string): string[] {
+export function kioskArgs(input: string, output: string, cut: CutOptions = {}): string[] {
   const s = OUTPUT_MAX_SIDE;
+  const before: string[] = cut.image
+    ? ["-loop", "1", "-framerate", String(OUTPUT_MAX_FPS)]
+    : cut.trimStartMs
+      ? ["-ss", (cut.trimStartMs / 1000).toFixed(3)]
+      : [];
+  const length = cut.durationSec ? ["-t", String(cut.durationSec)] : [];
   return [
     "-hide_banner",
     "-y",
+    ...before,
     "-i", input,
+    ...length,
     "-map", "0:v:0",
     "-an", "-sn", "-dn",
     "-map_metadata", "-1",
@@ -86,6 +105,7 @@ export function kioskArgs(input: string, output: string): string[] {
     "-preset", "veryfast",
     "-profile:v", "high",
     "-level:v", "4.1",
+    ...(cut.image ? ["-tune", "stillimage"] : []),
     "-crf", "23",
     "-maxrate", "4M",
     "-bufsize", "8M",
@@ -94,8 +114,8 @@ export function kioskArgs(input: string, output: string): string[] {
   ];
 }
 
-export async function transcodeForKiosk(input: string, output: string): Promise<void> {
-  const { code, stderr } = await run(kioskArgs(input, output), TRANSCODE_TIMEOUT_MS);
+export async function transcodeForKiosk(input: string, output: string, cut: CutOptions = {}): Promise<void> {
+  const { code, stderr } = await run(kioskArgs(input, output, cut), TRANSCODE_TIMEOUT_MS);
   if (code !== 0) {
     console.error("[transcode] ffmpeg failed", stderr.slice(-2000));
     throw new Error("TRANSCODE_FAILED");

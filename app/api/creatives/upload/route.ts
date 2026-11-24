@@ -13,6 +13,9 @@ const SOURCE_CONTENT_TYPES = [
   "video/x-matroska",
   "video/x-msvideo",
   "video/avi",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
   "application/octet-stream",
 ] as const;
 
