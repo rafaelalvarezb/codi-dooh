@@ -169,6 +169,8 @@ export function CodiPanel({
     stopTimer();
     relayFiredRef.current = false;
     confirmingRef.current = false;
+    const controller = new AbortController();
+    const abortTimer = window.setTimeout(() => controller.abort(), 15_000);
     try {
       const res = await fetch("/api/codi/create-qr", {
         method: "POST",
@@ -177,6 +179,8 @@ export function CodiPanel({
           useCaseId: profile.useCaseId,
           machineId: machineId ?? profile.id,
         }),
+        signal: controller.signal,
+        cache: "no-store",
       });
       const data = (await res.json()) as CreateQrResponse & {
         error?: { message?: string };
@@ -191,6 +195,8 @@ export function CodiPanel({
     } catch {
       setState("no-disponible");
       startedRef.current = false;
+    } finally {
+      window.clearTimeout(abortTimer);
     }
   }
 

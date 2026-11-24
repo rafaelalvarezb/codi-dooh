@@ -6,7 +6,7 @@ import { consumePendingPulse, getRecentRelayEvents } from "@/lib/relay";
  * Returns pending:true once per queued pulse (consumed), plus recent log.
  */
 export async function GET() {
-  const pending = consumePendingPulse();
+  const pending = await consumePendingPulse();
   return NextResponse.json({
     pending: Boolean(pending),
     durationMs: pending?.durationMs ?? 0,
