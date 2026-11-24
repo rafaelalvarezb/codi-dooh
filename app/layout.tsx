@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   title: "cobten",
   description: "Cobros CoDi y publicidad en pantalla para estacionamientos.",
   applicationName: "cobten",
+  // "Agregar a inicio" on an iPad opens the kiosk full screen, without Safari's bars.
+  appleWebApp: { capable: true, title: "cobten", statusBarStyle: "black-translucent" },
   robots: { index: false, follow: false },
 };
 
