@@ -12,7 +12,7 @@ export const MARKETING_HOSTS = new Set(["cobten.com", "www.cobten.com"]);
 export const APP_HOST = new URL(APP_URL).host;
 
 /** Paths that belong to the product, never to the marketing site. */
-export const APP_PATH = /^\/(entrar|registro|anunciantes|host|admin|portal)(\/|$)/;
+export const APP_PATH = /^\/(entrar|registro|probar|anunciantes|host|admin|portal)(\/|$)/;
 
 export function hostKind(hostHeader: string | null): "marketing" | "app" | "other" {
   const host = (hostHeader ?? "").toLowerCase().split(":")[0];

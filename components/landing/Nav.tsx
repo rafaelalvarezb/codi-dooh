@@ -40,8 +40,14 @@ export function Nav() {
           ))}
         </ul>
         <a
+          href="/probar"
+          className="hidden rounded-full px-3.5 py-2 text-[14px] text-white/70 transition hover:text-white lg:inline-flex lg:ml-2"
+        >
+          Probar demo
+        </a>
+        <a
           href="/entrar"
-          className="hidden rounded-full px-3.5 py-2 text-[14px] text-white/70 transition hover:text-white sm:inline-flex md:ml-2"
+          className="hidden rounded-full px-3.5 py-2 text-[14px] text-white/70 transition hover:text-white sm:inline-flex"
         >
           Entrar
         </a>
@@ -65,7 +71,7 @@ export function Nav() {
       {open ? (
         <div id="cb-mobile-menu" className="cb-nav-pill mx-auto mt-2 max-w-[1120px] rounded-[24px] p-2 text-white md:hidden">
           <ul>
-            {[...LINKS, { href: "/entrar", label: "Entrar" }].map((l) => (
+            {[...LINKS, { href: "/probar", label: "Probar como anunciante" }, { href: "/entrar", label: "Entrar" }].map((l) => (
               <li key={l.href}>
                 <a
                   href={l.href}

@@ -264,7 +264,10 @@ export async function seedDemoHistory(now = new Date()) {
 
   const screenIds = DEMO.screens.map((s) => s.id);
   await db.transaction(async (tx) => {
-    await tx.delete(plays).where(and(inArray(plays.screenId, screenIds), eq(plays.isDemo, true)));
+    // Only the Silvertag pilot's plays: "Probar como anunciante" sandboxes keep theirs.
+    await tx
+      .delete(plays)
+      .where(and(inArray(plays.screenId, screenIds), eq(plays.isDemo, true), eq(plays.campaignId, DEMO.campaign)));
     await tx.delete(payments).where(and(inArray(payments.machineId, screenIds), eq(payments.isDemo, true)));
     for (let i = 0; i < playRows.length; i += 1000) {
       await tx.insert(plays).values(playRows.slice(i, i + 1000)).onConflictDoNothing();

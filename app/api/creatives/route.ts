@@ -11,6 +11,8 @@ import { createCreative } from "@/lib/data/creatives";
 import { ValidationError } from "@/lib/data/context";
 import { badRequest, errorResponse } from "@/lib/http";
 import { newId } from "@/lib/ids";
+import { SANDBOX_MAX_UPLOADS, sandboxUploadsLeft } from "@/lib/demo-sandbox";
+import { isSandboxOrgId } from "@/lib/sandbox-id";
 import { isOwnedUploadUrl, LOCAL_UPLOAD_DIR, LOCAL_UPLOAD_ROUTE, orgUploadPrefix, storageMode } from "@/lib/storage";
 import { probeMp4 } from "@/lib/video/probe";
 import { checkCreative, checkSource, MAX_CREATIVE_BYTES, MAX_CREATIVE_MB } from "@/lib/video/rules";
@@ -81,6 +83,12 @@ export async function POST(request: Request) {
   if (!parsed.success) return badRequest(parsed.error);
   const { label, sourceUrl } = parsed.data;
   if (!isOwnedUploadUrl(sourceUrl, viewer.org.id, "source")) return badRequest("Video inválido.");
+  if (isSandboxOrgId(viewer.org.id) && (await sandboxUploadsLeft(viewer.org.id)) <= 0) {
+    return NextResponse.json(
+      { error: `En la cuenta de prueba puedes subir hasta ${SANDBOX_MAX_UPLOADS} videos. Crea tu cuenta real para subir más.` },
+      { status: 403 },
+    );
+  }
 
   const dir = await mkdtemp(path.join(os.tmpdir(), "creative-"));
   try {

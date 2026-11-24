@@ -601,6 +601,13 @@ export function DemoCta() {
                 </li>
               ))}
             </ul>
+            <a
+              href="/probar"
+              className="mt-10 inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-[15px] font-medium text-white transition hover:bg-white/10"
+            >
+              ¿Quieres verla por dentro? Probar como anunciante
+              <IconArrow className="size-4" />
+            </a>
           </div>
           <div className="rounded-[32px] bg-white p-6 text-[var(--cb-ink)] shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] sm:p-9" data-reveal style={d(100)}>
             <p className="text-[24px] font-semibold tracking-[-0.03em]">Agenda una demo</p>
