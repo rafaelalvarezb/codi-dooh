@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   applicationName: "cobten",
   // "Agregar a inicio" on an iPad opens the kiosk full screen, without Safari's bars.
   appleWebApp: { capable: true, title: "cobten", statusBarStyle: "black-translucent" },
+  // Next emits the standard tag; older iPads still look for Apple's name.
+  other: { "apple-mobile-web-app-capable": "yes" },
   robots: { index: false, follow: false },
 };
 
