@@ -4,11 +4,11 @@ import "./landing.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://cobten.com"),
   title: {
-    default: "cobten · Cobro CoDi para estacionamientos",
+    default: "cobten · Pagas con tu banco. Sales en segundos.",
     template: "%s · cobten",
   },
   description:
-    "Una pantalla con QR CoDi en la máquina de cobro de tu estacionamiento: quien no trae efectivo paga con la app de su banco, sin comisiones, y tu pantalla gana con anuncios.",
+    "¿No traes efectivo? Paga tu estacionamiento con CoDi desde la app de tu banco, sin comisiones. Para estacionamientos: una pantalla en tu máquina de cobro que también gana con anuncios.",
   applicationName: "cobten",
   robots: { index: true, follow: true },
   alternates: { canonical: "/" },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     locale: "es_MX",
     url: "https://cobten.com",
     siteName: "cobten",
-    title: "cobten · Pagan con su banco. Salen en segundos.",
+    title: "cobten · Pagas con tu banco. Sales en segundos.",
     description: "Cobro CoDi y publicidad en pantalla para estacionamientos.",
   },
   twitter: { card: "summary_large_image" },
