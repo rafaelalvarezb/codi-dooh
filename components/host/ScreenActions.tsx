@@ -109,3 +109,47 @@ export function AcceptsAdsToggle({ screenId, acceptsAds }: { screenId: string; a
     </div>
   );
 }
+
+/** Host's estimate of people paying per day: feeds the advertisers' reach estimate. */
+export function DailyPayersForm({ screenId, dailyPayers }: { screenId: string; dailyPayers: number | null }) {
+  const router = useRouter();
+  const [value, setValue] = useState(dailyPayers ? String(dailyPayers) : "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const n = value.trim() === "" ? null : Number(value.replace(/[^\d]/g, ""));
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    const err = await post(`/api/host/screens/${screenId}`, "PATCH", { dailyPayers: n });
+    setBusy(false);
+    if (err) return setError(err);
+    setSaved(true);
+    router.refresh();
+  }
+  return (
+    <form onSubmit={(e) => void save(e)} className="flex flex-wrap items-end gap-3">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[length:var(--cd-label)] font-medium text-[var(--cd-ink-2)]">Personas que pagan al día en esta máquina (aprox.)</span>
+        <input
+          inputMode="numeric"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="300"
+          className="h-11 w-40 rounded-[var(--cd-radius-sm)] border border-[var(--cd-line)] bg-[var(--cd-bg)] px-3 text-[length:var(--cd-body)] outline-none focus:border-[var(--cd-ink)]"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={busy}
+        className="h-11 rounded-[var(--cd-radius-sm)] border border-[var(--cd-line)] px-4 text-[length:var(--cd-small)] font-medium hover:bg-[var(--cd-surface)] disabled:opacity-50"
+      >
+        {busy ? "Guardando…" : "Guardar"}
+      </button>
+      {saved ? <span className="text-[length:var(--cd-small)] text-[var(--cd-success)]">Guardado</span> : null}
+      {error ? <span className="w-full text-[length:var(--cd-small)] text-[var(--cd-danger)]">{error}</span> : null}
+    </form>
+  );
+}

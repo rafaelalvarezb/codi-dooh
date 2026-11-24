@@ -1,7 +1,7 @@
 /** Screens visible to advertisers (marketplace) and to their host. */
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { organizations, screens, sites } from "@/lib/db/schema";
+import { campaignScreens, campaigns, creatives, organizations, screens, sites } from "@/lib/db/schema";
 import { getSettings } from "@/lib/settings";
 import type { OrgCtx } from "./context";
 
@@ -15,6 +15,8 @@ export type ScreenOption = {
   hostName: string;
   isDemo: boolean;
   spotPriceCents: number;
+  /** Host's estimate of people paying per day (null = default). */
+  dailyPayers: number | null;
 };
 
 async function selectScreens(where: ReturnType<typeof and>) {
@@ -25,6 +27,7 @@ async function selectScreens(where: ReturnType<typeof and>) {
       id: screens.id,
       name: screens.name,
       spotPriceCents: screens.spotPriceCents,
+      dailyPayers: screens.dailyPayers,
       isDemo: screens.isDemo,
       siteName: sites.name,
       siteAddress: sites.address,
@@ -51,4 +54,30 @@ export function listMarketplaceScreens(): Promise<ScreenOption[]> {
 /** Screens owned by the caller's org (for house campaigns). */
 export function listOwnScreens(ctx: OrgCtx): Promise<ScreenOption[]> {
   return selectScreens(and(eq(screens.orgId, ctx.orgId)));
+}
+
+/**
+ * Spots already booked on each screen by live or upcoming campaigns with an
+ * approved video: the other turns in the rotation a new booking would share.
+ */
+export async function bookedSpotsByScreen(screenIds: string[], now = new Date()): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (screenIds.length === 0) return out;
+  const db = await getDb();
+  const rows = await db
+    .select({ screenId: campaignScreens.screenId, spots: sql<number>`sum(${campaignScreens.spots})`.mapWith(Number) })
+    .from(campaignScreens)
+    .innerJoin(campaigns, eq(campaigns.id, campaignScreens.campaignId))
+    .innerJoin(creatives, eq(creatives.id, campaigns.creativeId))
+    .where(
+      and(
+        inArray(campaignScreens.screenId, screenIds),
+        eq(campaigns.status, "active"),
+        gt(campaigns.endsAt, now),
+        eq(creatives.status, "active"),
+      ),
+    )
+    .groupBy(campaignScreens.screenId);
+  for (const r of rows) out.set(r.screenId, r.spots);
+  return out;
 }
