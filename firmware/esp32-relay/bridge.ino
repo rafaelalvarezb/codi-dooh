@@ -84,13 +84,16 @@ void loop() {
   HTTPClient http;
   http.setTimeout(8000);
   http.setReuse(false);
+  // Vercel often answers 308 (HTTP→HTTPS or host alias); ESP32 must follow.
+  http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
 
   WiFiClientSecure secure;
   WiFiClient plain;
   bool began = false;
   if (pollUrlIsHttps()) {
     secure.setInsecure(); // demo: skip cert verify (OK for hackathon/mesa)
-    began = http.begin(secure, POLL_URL);
+    // Explicit host/port/path avoids Core 4.x treating the URL as plain HTTP.
+    began = http.begin(secure, "codi-dooh.vercel.app", 443, "/api/relay/events", true);
   } else {
     began = http.begin(plain, POLL_URL);
   }
