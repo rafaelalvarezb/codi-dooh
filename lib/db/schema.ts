@@ -103,6 +103,8 @@ export const screens = pgTable(
     tokenRotatedAt: timestamp("token_rotated_at", { withTimezone: true }),
     /** null = platform default price. */
     spotPriceCents: integer("spot_price_cents"),
+    /** Host's estimate of people paying at this machine per day (null = default). */
+    dailyPayers: integer("daily_payers"),
     acceptsAds: boolean("accepts_ads").notNull().default(true),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     isDemo: boolean("is_demo").notNull().default(false),

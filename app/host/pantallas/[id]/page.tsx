@@ -6,7 +6,7 @@ import { DemoBadge } from "@/components/app/DemoBadge";
 import { ScreenStatus } from "@/components/analytics/HostDashboard";
 import { relativeTime } from "@/components/analytics/format";
 import { KioskLinkCard } from "@/components/host/KioskLinkCard";
-import { AcceptsAdsToggle } from "@/components/host/ScreenActions";
+import { AcceptsAdsToggle, DailyPayersForm } from "@/components/host/ScreenActions";
 import { orgCtx, requireOrgViewer } from "@/lib/auth/dal";
 import { NotFoundError } from "@/lib/data/context";
 import { getHostScreen } from "@/lib/data/host";
@@ -66,6 +66,13 @@ export default async function Page({ params, searchParams }: PageProps<"/host/pa
               {screen.acceptsAds
                 ? "Las marcas pueden elegir esta pantalla. Las campañas que ya están al aire siguen hasta terminar."
                 : "Las marcas no pueden elegir esta pantalla. Tus anuncios propios sí se muestran."}
+            </p>
+          </div>
+          <div className="px-5 py-4">
+            <DailyPayersForm screenId={screen.id} dailyPayers={screen.dailyPayers} />
+            <p className="mt-2 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
+              Con este número estimamos a cuántas personas llega un anuncio en esta pantalla. Si no lo sabes, déjalo vacío y
+              usamos 300.
             </p>
           </div>
           <dl className="grid gap-x-6 gap-y-3 px-5 py-4 text-[length:var(--cd-small)] sm:grid-cols-2">

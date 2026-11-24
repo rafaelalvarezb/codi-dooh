@@ -6,7 +6,9 @@ import { KioskPreview } from "@/components/dooh/KioskPreview";
 import { DemoBadge } from "@/components/app/DemoBadge";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
 import { precheck, readSourceMeta, uploadSource, type UploadMode } from "@/lib/client/creative-upload";
-import { campaignMarketValueCents, formatMxn } from "@/lib/pricing";
+import { formatMxn } from "@/lib/pricing";
+import { DEFAULT_SLOT_SEC, minutesBetweenPlays } from "@/lib/reach";
+import { CostSummary } from "./CostSummary";
 import { letterboxFor, MAX_CREATIVE_MB, MAX_DURATION_SEC, MIN_DURATION_SEC, type Letterbox } from "@/lib/video/rules";
 
 export type WizardScreen = {
@@ -17,6 +19,10 @@ export type WizardScreen = {
   hostName: string;
   isDemo: boolean;
   spotPriceCents: number;
+  /** Host's estimate of people paying per day at this machine. */
+  dailyPayers: number | null;
+  /** Spots other live campaigns already have on this screen. */
+  bookedSpots: number;
 };
 
 export type WizardCreative = {
@@ -91,12 +97,24 @@ export function CampaignWizard(props: Props) {
   const startsAt = useMemo(() => parseInputDate(startDate, false), [startDate]);
   const endsAt = useMemo(() => parseInputDate(endDate, true), [endDate]);
   const chosen = props.screens.filter((s) => selected[s.id]);
-  const marketValue = campaignMarketValueCents({
-    spotPriceCents: props.spotPriceCents,
-    screens: chosen.map((s) => ({ spots: selected[s.id] })),
-    startsAt,
-    endsAt,
-  });
+  const adSec = creative ? Math.max(1, Math.round(creative.durationMs / 1000)) : DEFAULT_SLOT_SEC;
+  const showSummary = step >= 2;
+  const summary = (
+    <CostSummary
+      screens={chosen.map((s) => ({
+        id: s.id,
+        name: s.name,
+        spots: selected[s.id],
+        bookedSpots: s.bookedSpots,
+        dailyPayers: s.dailyPayers,
+      }))}
+      spotPriceCents={props.spotPriceCents}
+      startsAt={startsAt}
+      endsAt={endsAt}
+      adSec={adSec}
+      free={props.mode === "house"}
+    />
+  );
 
   const canContinue =
     (step === 0 && name.trim().length >= 2) ||
@@ -163,7 +181,8 @@ export function CampaignWizard(props: Props) {
         ))}
       </ol>
 
-      <div className="mt-4 rounded-[var(--cd-radius-lg)] border border-[var(--cd-line)] bg-[var(--cd-bg)] p-5 sm:p-8">
+      <div className={showSummary ? "mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start" : "mt-4"}>
+      <div className="min-w-0 rounded-[var(--cd-radius-lg)] border border-[var(--cd-line)] bg-[var(--cd-bg)] p-5 sm:p-8">
         {step === 0 ? (
           <div className="max-w-md">
             <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">¿Cómo se llama tu campaña?</h2>
@@ -200,6 +219,7 @@ export function CampaignWizard(props: Props) {
             onChange={setSelected}
             spotPriceCents={props.spotPriceCents}
             house={props.mode === "house"}
+            adSec={adSec}
           />
         ) : null}
 
@@ -246,19 +266,16 @@ export function CampaignWizard(props: Props) {
               <Row label="Video" value={`${creative.label} · ${Math.round(creative.durationMs / 1000)} s`} />
               <Row label="Pantallas" value={`${chosen.length} · ${chosen.reduce((a, s) => a + selected[s.id], 0)} spots`} />
               <Row label="Fechas" value={`${formatDate(startsAt)} – ${formatDate(endsAt)}`} />
-              <Row
-                label={props.mode === "house" ? "Costo" : "Total"}
-                value={props.mode === "house" ? "Sin costo" : formatMxn(marketValue)}
-                strong
-              />
               {props.mode === "advertiser" ? (
                 <p className="px-4 py-3 text-[length:var(--cd-label)] text-[var(--cd-muted)]">
-                  Se agrega a tu saldo por pagar. No te cobramos nada hoy.
+                  El total y lo que obtienes están en el resumen. No te cobramos nada hoy: se agrega a tu saldo por pagar.
                 </p>
               ) : null}
             </dl>
           </div>
         ) : null}
+
+        {showSummary ? <div className="mt-8 lg:hidden">{summary}</div> : null}
 
         <FormError>{error}</FormError>
 
@@ -276,6 +293,8 @@ export function CampaignWizard(props: Props) {
             </Button>
           )}
         </div>
+      </div>
+      {showSummary ? <aside className="hidden lg:sticky lg:top-24 lg:block">{summary}</aside> : null}
       </div>
     </div>
   );
@@ -494,12 +513,14 @@ function ScreensStep({
   onChange,
   spotPriceCents,
   house,
+  adSec,
 }: {
   screens: WizardScreen[];
   selected: Record<string, number>;
   onChange: (next: Record<string, number>) => void;
   spotPriceCents: number;
   house: boolean;
+  adSec: number;
 }) {
   if (screens.length === 0) {
     return (
@@ -524,11 +545,11 @@ function ScreensStep({
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Elige pantallas</h2>
-          <p className="mt-1 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
+          <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Elige pantallas y frecuencia</h2>
+          <p className="mt-1 max-w-xl text-[length:var(--cd-small)] text-[var(--cd-muted)]">
             {house
               ? "Tus pantallas. Tus anuncios propios no tienen costo."
-              : `Cada spot es un lugar en la rotación: ${formatMxn(spotPriceCents, { decimals: false })} al mes por pantalla. Más spots, más veces al aire.`}
+              : `Cada pantalla pasa los anuncios por turnos. Un spot es un turno tuyo: más spots, tu anuncio sale más seguido. ${formatMxn(spotPriceCents, { decimals: false })} al mes por spot en cada pantalla.`}
           </p>
         </div>
         <button
@@ -563,17 +584,24 @@ function ScreensStep({
                   </span>
                 </span>
               </label>
-              {on && !house ? (
-                <div className="ml-8 flex items-center gap-1 sm:ml-0" aria-label={`Spots en ${s.name}`}>
-                  <StepperButton label="Menos" onClick={() => setSpots(s.id, selected[s.id] - 1)} disabled={selected[s.id] <= 1}>
-                    −
-                  </StepperButton>
-                  <span className="w-16 text-center text-[length:var(--cd-small)] tabular-nums">
-                    {selected[s.id]} {selected[s.id] === 1 ? "spot" : "spots"}
+              {on ? (
+                <div className="ml-8 flex flex-col items-start gap-1 sm:ml-0 sm:items-end">
+                  {!house ? (
+                    <div className="flex items-center gap-1" role="group" aria-label={`Frecuencia en ${s.name}`}>
+                      <StepperButton label="Menos" onClick={() => setSpots(s.id, selected[s.id] - 1)} disabled={selected[s.id] <= 1}>
+                        −
+                      </StepperButton>
+                      <span className="w-16 text-center text-[length:var(--cd-small)] tabular-nums">
+                        {selected[s.id]} {selected[s.id] === 1 ? "spot" : "spots"}
+                      </span>
+                      <StepperButton label="Más" onClick={() => setSpots(s.id, selected[s.id] + 1)} disabled={selected[s.id] >= 10}>
+                        +
+                      </StepperButton>
+                    </div>
+                  ) : null}
+                  <span className="text-[length:var(--cd-label)] text-[var(--cd-muted)]">
+                    {frequencyLabel(minutesBetweenPlays({ spots: selected[s.id], otherSpots: s.bookedSpots, dailyPayers: s.dailyPayers }, adSec))}
                   </span>
-                  <StepperButton label="Más" onClick={() => setSpots(s.id, selected[s.id] + 1)} disabled={selected[s.id] >= 10}>
-                    +
-                  </StepperButton>
                 </div>
               ) : null}
             </li>
@@ -582,6 +610,13 @@ function ScreensStep({
       </ul>
     </div>
   );
+}
+
+/** "sale ≈ cada 4 min" — how often your ad comes back on this screen. */
+function frequencyLabel(minutes: number): string {
+  if (!Number.isFinite(minutes)) return "";
+  if (minutes < 1) return `Sale ≈ cada ${Math.max(5, Math.round((minutes * 60) / 5) * 5)} s`;
+  return `Sale ≈ cada ${Math.round(minutes)} min`;
 }
 
 function StepperButton({
