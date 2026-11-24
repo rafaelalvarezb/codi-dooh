@@ -55,7 +55,8 @@ export async function POST(request: Request) {
           concept,
           expiration: 600,
           numRef,
-          generateImage: true,
+          // Faster: UI draws the QR from qrString (QrFallback).
+          generateImage: false,
           metadata: {
             product: "codi-dooh",
             useCase: useCase.id,
