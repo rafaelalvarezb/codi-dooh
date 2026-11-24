@@ -33,7 +33,17 @@ export const ScreenSchema = z.object({
 });
 
 export const ScreenPatchSchema = z
-  .object({ name: text(80, "Escribe un nombre para la pantalla.").optional(), acceptsAds: z.boolean().optional() })
-  .refine((v) => v.name !== undefined || v.acceptsAds !== undefined, "Nada que cambiar.");
+  .object({
+    name: text(80, "Escribe un nombre para la pantalla.").optional(),
+    acceptsAds: z.boolean().optional(),
+    dailyPayers: z
+      .number({ message: "Escribe un número." })
+      .int("Escribe un número entero.")
+      .min(1, "Escribe cuántas personas pagan al día.")
+      .max(100_000, "Revisa el número.")
+      .nullable()
+      .optional(),
+  })
+  .refine((v) => v.name !== undefined || v.acceptsAds !== undefined || v.dailyPayers !== undefined, "Nada que cambiar.");
 
 export const SCREEN_ID = /^scr_[a-z0-9_]{4,40}$/;

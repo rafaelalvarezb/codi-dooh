@@ -15,8 +15,18 @@ import { SANDBOX_MAX_UPLOADS, sandboxUploadsLeft } from "@/lib/demo-sandbox";
 import { isSandboxOrgId } from "@/lib/sandbox-id";
 import { isOwnedUploadUrl, LOCAL_UPLOAD_DIR, LOCAL_UPLOAD_ROUTE, orgUploadPrefix, storageMode } from "@/lib/storage";
 import { probeMp4 } from "@/lib/video/probe";
-import { checkCreative, checkSource, MAX_CREATIVE_BYTES, MAX_CREATIVE_MB } from "@/lib/video/rules";
-import { extractPoster, inspectSource, transcodeForKiosk } from "@/lib/video/transcode";
+import { isImageSource } from "@/lib/storage-paths";
+import {
+  checkCreative,
+  checkSource,
+  clampTrimStart,
+  IMAGE_DURATION_SEC,
+  MAX_CREATIVE_BYTES,
+  MAX_CREATIVE_MB,
+  MAX_DURATION_SEC,
+  needsTrim,
+} from "@/lib/video/rules";
+import { extractPoster, inspectSource, transcodeForKiosk, type CutOptions } from "@/lib/video/transcode";
 
 /** Conversion of a 30 s 1080p spot takes ~10–60 s on a serverless CPU. */
 export const maxDuration = 300;
@@ -25,6 +35,8 @@ const BodySchema = z.object({
   label: z.string().trim().min(1, "Ponle un nombre al video.").max(80),
   /** The original the browser uploaded to creatives/<org>/src/. */
   sourceUrl: z.string().min(1).max(1024),
+  /** Start of the 15 s cut for longer videos (the advertiser picks it). */
+  trimStartMs: z.number().int().min(0).max(24 * 3600 * 1000).optional(),
 });
 
 function localFileFor(url: string): string {
@@ -81,7 +93,8 @@ export async function POST(request: Request) {
 
   const parsed = BodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return badRequest(parsed.error);
-  const { label, sourceUrl } = parsed.data;
+  const { label, sourceUrl, trimStartMs } = parsed.data;
+  const image = isImageSource(sourceUrl);
   if (!isOwnedUploadUrl(sourceUrl, viewer.org.id, "source")) return badRequest("Video inválido.");
   if (isSandboxOrgId(viewer.org.id) && (await sandboxUploadsLeft(viewer.org.id)) <= 0) {
     return NextResponse.json(
@@ -97,14 +110,21 @@ export async function POST(request: Request) {
 
     const output = path.join(dir, "kiosk.mp4");
     let converted = true;
+    let cut: CutOptions = {};
     try {
       const info = await inspectSource(input);
-      if (!info) throw new ValidationError("No pudimos leer el video. Prueba con otro archivo.");
-      const errors = checkSource({ ...info, sizeBytes });
+      if (!info) throw new ValidationError(image ? "No pudimos leer la imagen. Prueba con JPG o PNG." : "No pudimos leer el video. Prueba con otro archivo.");
+      const errors = checkSource({ ...info, sizeBytes, image });
       if (errors.length) throw new ValidationError(errors.join(" "));
-      await transcodeForKiosk(input, output);
+      if (image) cut = { image: true, durationSec: IMAGE_DURATION_SEC };
+      else if (needsTrim(info.durationMs)) {
+        cut = { trimStartMs: clampTrimStart(trimStartMs, info.durationMs), durationSec: MAX_DURATION_SEC };
+      }
+      await transcodeForKiosk(input, output, cut);
     } catch (err) {
       if (err instanceof ValidationError) throw err;
+      // Images and cuts need ffmpeg; there is no original to fall back to.
+      if (image || cut.durationSec) throw new ValidationError("No pudimos preparar este archivo. Intenta de nuevo en un momento.");
       // ffmpeg missing or failing on this server: fall back to the original
       // when it already plays on the kiosk (H.264 MP4), as before conversion.
       console.error("[creatives] conversion unavailable, trying original", err);

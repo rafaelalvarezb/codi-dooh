@@ -142,12 +142,17 @@ export async function rotateScreenToken(ctx: OrgCtx, id: string) {
   return row.tokenVersion!;
 }
 
-export async function updateScreen(ctx: OrgCtx, id: string, patch: { name?: string; acceptsAds?: boolean }) {
+export async function updateScreen(
+  ctx: OrgCtx,
+  id: string,
+  patch: { name?: string; acceptsAds?: boolean; dailyPayers?: number | null },
+) {
   assertHost(ctx);
   const db = await getDb();
   const set: Partial<typeof screens.$inferInsert> = {};
   if (patch.name !== undefined) set.name = patch.name.trim();
   if (patch.acceptsAds !== undefined) set.acceptsAds = patch.acceptsAds;
+  if (patch.dailyPayers !== undefined) set.dailyPayers = patch.dailyPayers;
   if (Object.keys(set).length === 0) return;
   const [row] = await db
     .update(screens)

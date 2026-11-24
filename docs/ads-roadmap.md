@@ -12,8 +12,9 @@ Pitch comercial:
 
 ## Fase B: Ads Manager DOOH de autoservicio (hecha en `feat/ads-platform`)
 
-- **Anunciantes**: registro abierto, subida de video con validación (MP4 H.264,
-  5–30 s, ≤ 100 MB, lado corto ≥ 480 px; MP4 o MOV, tolera metadatos de Premiere), vista previa exacta del kiosco,
+- **Anunciantes**: registro abierto, subida de casi cualquier video (MP4, MOV/HEVC, WebM, MKV;
+  ≤ 250 MB) o imagen (JPG, PNG, WebP) que el servidor convierte con ffmpeg a H.264 ≤ 1280 px;
+  spots de 5–15 s (videos más largos se recortan al tramo que elige la marca; imágenes = 15 s), vista previa exacta del kiosco,
   elección de pantallas y spots, publicación inmediata, analítica con
   "pagos durante tu anuncio" (atención verificada con CoDi).
 - **Hosts**: alta en 4 pasos (negocio → CLABE validada → sitio → pantalla), link
@@ -41,7 +42,6 @@ Explícitamente fuera:
 - **Pagos reales a hosts y facturación (CFDI)**: hoy solo se calcula lo que se
   le debe a cada host; el depósito se hace fuera de la plataforma.
 - **Hardware** nuevo (pantallas, players dedicados).
-- **Landing** pública de marketing.
 
 Pendientes identificados durante la construcción:
 
@@ -53,9 +53,18 @@ Pendientes identificados durante la construcción:
   también los meses anteriores.
 - **Reembolsos**: pausar una campaña no reduce lo que se cobra.
 - **Checkout de máquina expendedora**: hoy usa el flujo de "recarga".
-- **Equipos**: invitar a más personas a una organización, recuperar contraseña,
-  verificar correo.
+- **Equipos**: invitar a más personas a una organización y verificar correo.
+  (Recuperar contraseña ya está hecho.)
 - **Seguridad del relevador**: `POST /api/relay/pulse` no pide credenciales
   (código del módulo de hardware, no se tocó en esta fase).
 - **Mensajes de validación**: los errores de formato raros salen del idioma por
   defecto de zod; los comunes ya están en español.
+
+## Hecho después de la fase B
+
+- **cobten.com**: página pública (`app/sitio`), con formulario "Agenda una demo"
+  que llega a `/admin/contactos` y por correo (`LEADS_NOTIFY_EMAIL`).
+- **app.cobten.com**: la app, separada por dominio en `proxy.ts`.
+- **Videos**: conversión automática con ffmpeg (`lib/video/transcode.ts`).
+- **Recuperar contraseña**: enlace de un solo uso por correo (Resend), vence en
+  1 hora y cierra las sesiones anteriores.

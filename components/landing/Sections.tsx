@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { CobtenLogo, CobtenSymbol } from "@/components/brand/CobtenLogo";
-import { ImageSlot } from "./ImageSlot";
+import { AdvertiserExperience } from "./AdvertiserExperience";
+import { findLandingFile, ImageSlot } from "./ImageSlot";
 import { LeadForm } from "./LeadForm";
 import {
   IconArrow,
@@ -76,11 +77,12 @@ export function Benefits() {
     <section id="estacionamientos" className="scroll-mt-24 px-4 py-24 sm:px-6 sm:py-32">
       <Container>
         <div className="max-w-3xl" data-reveal>
-          <Eyebrow>Para plazas y estacionamientos</Eyebrow>
-          <h2 className="cb-h2 mt-5">Nadie tiene que ir por efectivo.</h2>
+          <Eyebrow>Para estacionamientos</Eyebrow>
+          <h2 className="cb-h2 mt-5">Ayuda a tus clientes a no batallar. Y gana con tu pantalla.</h2>
           <p className="cb-lead mt-5 max-w-2xl text-[var(--cb-ink-2)]">
-            Pasa todos los días: el boleto cuesta $35, la persona trae $20 y tiene que salir a buscar un cajero. Con
-            cobten paga ahí mismo, en la máquina de cobro, desde la app de su banco.
+            Pasa todos los días: el boleto cuesta $35, tu cliente trae $20 y tiene que salir a buscar un cajero. Con
+            cobten paga ahí mismo, en tu máquina de cobro, con la app de su banco. No cambias tu máquina y, además,
+            la pantalla te genera ingresos con anuncios.
           </p>
         </div>
 
@@ -204,19 +206,19 @@ const STEPS = [
   {
     n: "01",
     title: "Escanea",
-    body: "Frente a la máquina de cobro, tu cliente abre la app de su banco y escanea el QR CoDi de la pantalla.",
+    body: "Frente a la máquina de cobro, abre la app de tu banco y escanea el QR CoDi de la pantalla.",
     image: "paso-escanea",
   },
   {
     n: "02",
     title: "Confirma",
-    body: "Ve el monto exacto de su boleto y confirma. Sin efectivo, sin tarjeta y sin comisiones.",
+    body: "Ve el monto exacto de tu boleto y confirma. Sin efectivo, sin tarjeta y sin comisiones.",
     image: "paso-confirma",
   },
   {
     n: "03",
-    title: "Sale",
-    body: "El pago llega al instante, su boleto queda pagado y la pantalla le dice: ya puedes salir.",
+    title: "Sal",
+    body: "El pago llega al instante, tu boleto queda pagado y la pantalla te dice: ya puedes salir.",
     image: "paso-sal",
   },
 ] as const;
@@ -231,7 +233,7 @@ export function HowItWorks() {
             <h2 className="cb-h2 mt-5">Tres pasos. Cero filas.</h2>
           </div>
           <p className="cb-lead max-w-md text-[var(--cb-ink-2)]">
-            Lo que vive tu cliente frente a la máquina de cobro, de principio a fin, sin ir a buscar efectivo.
+            Lo que vives frente a la máquina de cobro, de principio a fin, sin ir a buscar efectivo.
           </p>
         </div>
         <ol className="mt-14 grid gap-4 md:grid-cols-3">
@@ -272,7 +274,7 @@ export function ScreenIncome() {
       <Container className="relative">
         <div className="grid gap-14 lg:grid-cols-[1fr_1.05fr] lg:items-center">
           <div data-reveal>
-            <Eyebrow dark>Ingresos extra</Eyebrow>
+            <Eyebrow dark>Para estacionamientos · Ingresos extra</Eyebrow>
             <h2 className="cb-h2 mt-5">Tu pantalla también gana.</h2>
             <p className="cb-lead mt-5 max-w-xl text-white/65">
               Mientras nadie está pagando, la pantalla pasa anuncios de marcas. Tú recibes el 70% de lo que pagan, cada
@@ -302,7 +304,7 @@ export function ScreenIncome() {
               </div>
               <p className="mt-6 text-[13px] text-[var(--cb-muted)]">Próximo pago · 5 de enero</p>
               <p className="mt-1 text-[44px] leading-none font-semibold tracking-[-0.045em] tabular-nums">
-                $4,830<span className="text-[24px] text-[var(--cb-muted)]">.00</span>
+                $12,600<span className="text-[24px] text-[var(--cb-muted)]">.00</span>
               </p>
               <p className="mt-2 text-[13px] text-[var(--cb-muted)]">A tu CLABE •••• 7899</p>
 
@@ -321,11 +323,11 @@ export function ScreenIncome() {
               <div className="mt-8 divide-y divide-[var(--cb-line)] border-t border-[var(--cb-line)] text-[14px]">
                 <div className="flex justify-between py-3">
                   <span className="text-[var(--cb-muted)]">Pagaron las marcas</span>
-                  <span className="tabular-nums">$6,900.00</span>
+                  <span className="tabular-nums">$18,000.00</span>
                 </div>
                 <div className="flex justify-between py-3">
                   <span className="text-[var(--cb-muted)]">Tu parte (70%)</span>
-                  <span className="font-medium tabular-nums">$4,830.00</span>
+                  <span className="font-medium tabular-nums">$12,600.00</span>
                 </div>
               </div>
             </div>
@@ -342,16 +344,24 @@ export function ScreenIncome() {
 
 // ---------------------------------------------------------------- advertisers
 
-/** Seconds on a 60 s strip: when the ad played and when payments happened. */
-const PLAYS = [
-  [2, 14],
-  [24, 36],
-  [46, 58],
+const AD_POINTS = [
+  {
+    title: "Justo cuando sacan el celular",
+    body: "Tu video corre en la máquina de cobro mientras la persona paga su boleto: de pie, mirando la pantalla.",
+  },
+  {
+    title: "Sabes cuántos pagaron mientras pasaba tu anuncio",
+    body: "Además de las reproducciones, te decimos cuántas personas pagaron con CoDi frente a tu anuncio.",
+  },
+  {
+    title: "Publicas en minutos",
+    body: "Sube tu video o imagen, elige pantallas y fechas, ve el precio antes de pagar y en menos de un minuto está al aire.",
+  },
 ];
-const PAYMENTS = [9, 19, 31, 41, 50];
 
 export function Advertisers() {
-  const during = (t: number) => PLAYS.some(([a, b]) => t >= a && t <= b);
+  const videoSrc = findLandingFile("experiencia-anunciantes", ["mp4", "webm"]);
+  const posterSrc = findLandingFile("experiencia-anunciantes", ["jpg", "webp", "png"]);
   return (
     <section id="anunciantes" className="scroll-mt-24 px-4 py-24 sm:px-6 sm:py-32">
       <Container>
@@ -361,82 +371,34 @@ export function Advertisers() {
           </div>
           <div>
             <div data-reveal>
-              <Eyebrow>Para marcas</Eyebrow>
-              <h2 className="cb-h2 mt-5">Anúnciate donde la gente paga.</h2>
+              <Eyebrow>Para anunciantes</Eyebrow>
+              <h2 className="cb-h2 mt-5">La pantalla que tu cliente no puede ignorar.</h2>
               <p className="cb-lead mt-5 text-[var(--cb-ink-2)]">
-                Tu video corre en la máquina de cobro de la plaza, justo cuando alguien saca su celular para pagar. Y te
-                decimos cuántas personas pagaron mientras pasaba tu anuncio.
+                Tu anuncio corre frente a la persona mientras paga su boleto: de pie, mirando la pantalla, celular en
+                mano. No es un espectacular que se ve de reojo.
               </p>
             </div>
 
-            <div className="mt-8 rounded-[var(--cb-radius)] bg-[var(--cb-card)] p-6 sm:p-7" data-reveal style={d(100)}>
-              <div className="flex items-baseline justify-between gap-4">
-                <p className="text-[15px] font-medium">Pagos durante tu anuncio</p>
-                <p className="text-[32px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
-                  {PAYMENTS.filter(during).length}
-                  <span className="ml-1 text-[14px] font-normal tracking-normal text-[var(--cb-muted)]">de {PAYMENTS.length}</span>
-                </p>
-              </div>
-              <div className="relative mt-6 h-14" role="img" aria-label="Ejemplo de un minuto: tu anuncio pasó 3 veces y 3 de los 5 pagos ocurrieron mientras pasaba">
-                <div className="absolute inset-x-0 top-[22px] h-3 rounded-full bg-[var(--cb-bg)]" />
-                {PLAYS.map(([a, b]) => (
-                  <div
-                    key={a}
-                    className="absolute top-[22px] h-3 rounded-full bg-[var(--cb-ink)]"
-                    style={{ left: `${(a / 60) * 100}%`, width: `${((b - a) / 60) * 100}%` }}
-                  />
-                ))}
-                {PAYMENTS.map((t) => (
-                  <span
-                    key={t}
-                    className={`absolute top-[17px] size-[22px] -translate-x-1/2 rounded-full border-[3px] border-white ${
-                      during(t) ? "bg-[#0f8f45]" : "bg-[#c4c4ca]"
-                    }`}
-                    style={{ left: `${(t / 60) * 100}%` }}
-                  />
-                ))}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-[var(--cb-muted)]">
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-5 rounded-full bg-[var(--cb-ink)]" />
-                  Tu anuncio al aire
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="size-2.5 rounded-full bg-[#0f8f45]" />
-                  Pago mientras pasaba
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="size-2.5 rounded-full bg-[#c4c4ca]" />
-                  Otro pago
-                </span>
-              </div>
-            </div>
-
-            <ul className="mt-8 space-y-3 text-[16px]" data-reveal style={d(160)}>
-              {[
-                "Sube tu video y míralo tal como se verá en la pantalla.",
-                "Elige pantallas y fechas; el precio lo ves antes de publicar.",
-                "Publica y en menos de un minuto ya está al aire.",
-              ].map((t) => (
-                <li key={t} className="flex gap-3">
+            <ul className="mt-8 grid gap-3" data-reveal style={d(100)}>
+              {AD_POINTS.map((p) => (
+                <li key={p.title} className="flex gap-4 rounded-[20px] bg-[var(--cb-card)] p-5">
                   <IconCheck className="mt-0.5 size-5 shrink-0 text-[var(--cb-go)]" />
-                  <span className="text-[var(--cb-ink-2)]">{t}</span>
+                  <span>
+                    <span className="block text-[17px] font-semibold tracking-[-0.02em]">{p.title}</span>
+                    <span className="mt-1 block text-[15px] leading-relaxed text-[var(--cb-muted)]">{p.body}</span>
+                  </span>
                 </li>
               ))}
             </ul>
-            <div className="mt-9 flex flex-wrap gap-3" data-reveal style={d(200)}>
+
+            <div className="mt-9 flex flex-wrap gap-3" data-reveal style={d(160)}>
+              <AdvertiserExperience videoSrc={videoSrc} posterSrc={posterSrc} />
               <a
                 href="/registro"
-                className="inline-flex h-12 items-center gap-2 rounded-full bg-[var(--cb-ink)] px-6 text-[15px] font-medium text-white transition hover:opacity-90"
+                className="inline-flex h-12 items-center gap-2 rounded-full border border-[var(--cb-line)] bg-white px-6 text-[15px] font-medium transition hover:border-[var(--cb-ink)]"
               >
                 Crear campaña
                 <IconArrow className="size-4" />
-              </a>
-              <a
-                href="/entrar"
-                className="inline-flex h-12 items-center rounded-full border border-[var(--cb-line)] bg-white px-6 text-[15px] font-medium transition hover:border-[var(--cb-ink)]"
-              >
-                Ya tengo cuenta
               </a>
             </div>
           </div>

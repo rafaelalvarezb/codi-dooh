@@ -5,9 +5,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { KioskPreview } from "@/components/dooh/KioskPreview";
 import { DemoBadge } from "@/components/app/DemoBadge";
 import { Button, Field, FormError, TextInput } from "@/components/ui/form";
-import { precheck, readSourceMeta, uploadSource, type UploadMode } from "@/lib/client/creative-upload";
-import { campaignMarketValueCents, formatMxn } from "@/lib/pricing";
-import { letterboxFor, MAX_CREATIVE_MB, MAX_DURATION_SEC, MIN_DURATION_SEC, type Letterbox } from "@/lib/video/rules";
+import { isImageFile, precheck, readSourceMeta, uploadSource, type UploadMode } from "@/lib/client/creative-upload";
+import { formatMxn } from "@/lib/pricing";
+import { DEFAULT_SLOT_SEC, minutesBetweenPlays } from "@/lib/reach";
+import { CostSummary } from "./CostSummary";
+import { TrimPicker } from "./TrimPicker";
+import { letterboxFor, MAX_CREATIVE_MB, MAX_DURATION_SEC, MIN_DURATION_SEC, needsTrim, type Letterbox } from "@/lib/video/rules";
 
 export type WizardScreen = {
   id: string;
@@ -17,6 +20,10 @@ export type WizardScreen = {
   hostName: string;
   isDemo: boolean;
   spotPriceCents: number;
+  /** Host's estimate of people paying per day at this machine. */
+  dailyPayers: number | null;
+  /** Spots other live campaigns already have on this screen. */
+  bookedSpots: number;
 };
 
 export type WizardCreative = {
@@ -91,12 +98,24 @@ export function CampaignWizard(props: Props) {
   const startsAt = useMemo(() => parseInputDate(startDate, false), [startDate]);
   const endsAt = useMemo(() => parseInputDate(endDate, true), [endDate]);
   const chosen = props.screens.filter((s) => selected[s.id]);
-  const marketValue = campaignMarketValueCents({
-    spotPriceCents: props.spotPriceCents,
-    screens: chosen.map((s) => ({ spots: selected[s.id] })),
-    startsAt,
-    endsAt,
-  });
+  const adSec = creative ? Math.max(1, Math.round(creative.durationMs / 1000)) : DEFAULT_SLOT_SEC;
+  const showSummary = step >= 2;
+  const summary = (
+    <CostSummary
+      screens={chosen.map((s) => ({
+        id: s.id,
+        name: s.name,
+        spots: selected[s.id],
+        bookedSpots: s.bookedSpots,
+        dailyPayers: s.dailyPayers,
+      }))}
+      spotPriceCents={props.spotPriceCents}
+      startsAt={startsAt}
+      endsAt={endsAt}
+      adSec={adSec}
+      free={props.mode === "house"}
+    />
+  );
 
   const canContinue =
     (step === 0 && name.trim().length >= 2) ||
@@ -163,7 +182,8 @@ export function CampaignWizard(props: Props) {
         ))}
       </ol>
 
-      <div className="mt-4 rounded-[var(--cd-radius-lg)] border border-[var(--cd-line)] bg-[var(--cd-bg)] p-5 sm:p-8">
+      <div className={showSummary ? "mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start" : "mt-4"}>
+      <div className="min-w-0 rounded-[var(--cd-radius-lg)] border border-[var(--cd-line)] bg-[var(--cd-bg)] p-5 sm:p-8">
         {step === 0 ? (
           <div className="max-w-md">
             <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">¿Cómo se llama tu campaña?</h2>
@@ -200,6 +220,7 @@ export function CampaignWizard(props: Props) {
             onChange={setSelected}
             spotPriceCents={props.spotPriceCents}
             house={props.mode === "house"}
+            adSec={adSec}
           />
         ) : null}
 
@@ -246,19 +267,16 @@ export function CampaignWizard(props: Props) {
               <Row label="Video" value={`${creative.label} · ${Math.round(creative.durationMs / 1000)} s`} />
               <Row label="Pantallas" value={`${chosen.length} · ${chosen.reduce((a, s) => a + selected[s.id], 0)} spots`} />
               <Row label="Fechas" value={`${formatDate(startsAt)} – ${formatDate(endsAt)}`} />
-              <Row
-                label={props.mode === "house" ? "Costo" : "Total"}
-                value={props.mode === "house" ? "Sin costo" : formatMxn(marketValue)}
-                strong
-              />
               {props.mode === "advertiser" ? (
                 <p className="px-4 py-3 text-[length:var(--cd-label)] text-[var(--cd-muted)]">
-                  Se agrega a tu saldo por pagar. No te cobramos nada hoy.
+                  El total y lo que obtienes están en el resumen. No te cobramos nada hoy: se agrega a tu saldo por pagar.
                 </p>
               ) : null}
             </dl>
           </div>
         ) : null}
+
+        {showSummary ? <div className="mt-8 lg:hidden">{summary}</div> : null}
 
         <FormError>{error}</FormError>
 
@@ -276,6 +294,8 @@ export function CampaignWizard(props: Props) {
             </Button>
           )}
         </div>
+      </div>
+      {showSummary ? <aside className="hidden lg:sticky lg:top-24 lg:block">{summary}</aside> : null}
       </div>
     </div>
   );
@@ -310,23 +330,35 @@ function CreativeStep({
   const [progress, setProgress] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [localPreview, setLocalPreview] = useState<{ src: string; letterbox: Letterbox } | null>(null);
+  /** A video longer than a spot, waiting for the advertiser to pick its 15 s. */
+  const [toTrim, setToTrim] = useState<{ file: File; src: string; durationMs: number } | null>(null);
+  const [trimStart, setTrimStart] = useState(0);
   const busy = phase !== "idle";
 
   async function onFile(file: File) {
     setErrors([]);
     setLocalPreview(null);
+    setToTrim(null);
     onChange(null);
     setPhase("checking");
     // The browser may not decode every format; the server converts and re-checks.
     const meta = await readSourceMeta(file);
     const problems = precheck(file, meta);
+    setPhase("idle");
     if (problems.length) {
-      setPhase("idle");
       setErrors(problems);
       return;
     }
-    if (meta) setLocalPreview({ src: URL.createObjectURL(file), letterbox: letterboxFor(meta.width, meta.height) });
+    if (meta && !meta.image && needsTrim(meta.durationMs)) {
+      setTrimStart(0);
+      setToTrim({ file, src: URL.createObjectURL(file), durationMs: meta.durationMs });
+      return;
+    }
+    await upload(file, meta && !isImageFile(file) ? letterboxFor(meta.width, meta.height) : null);
+  }
 
+  async function upload(file: File, letterbox: Letterbox | null, trimStartMs?: number) {
+    if (letterbox) setLocalPreview({ src: URL.createObjectURL(file), letterbox });
     try {
       setPhase("uploading");
       setProgress(0);
@@ -336,7 +368,7 @@ function CreativeStep({
       const res = await fetch("/api/creatives", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, sourceUrl }),
+        body: JSON.stringify({ label, sourceUrl, trimStartMs }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
@@ -344,6 +376,7 @@ function CreativeStep({
       };
       if (!res.ok || !data.creative) throw new Error(data.error ?? "No se pudo preparar el video.");
       const c = data.creative;
+      setToTrim(null);
       onChange({ id: c.id, label: c.label, src: c.blobUrl, poster: c.posterUrl, durationMs: c.durationMs, width: c.width, height: c.height });
     } catch (err) {
       setLocalPreview(null);
@@ -359,13 +392,34 @@ function CreativeStep({
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
-        <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Sube tu video</h2>
+        <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Sube tu video o imagen</h2>
         <p className="mt-1 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
-          Cualquier video de {MIN_DURATION_SEC} a {MAX_DURATION_SEC} segundos, hasta {MAX_CREATIVE_MB} MB: MP4, MOV (iPhone), WebM… Horizontal, vertical o cuadrado. Nosotros lo preparamos para el kiosco.
+          Video de {MIN_DURATION_SEC} a {MAX_DURATION_SEC} segundos o una imagen (se muestra {MAX_DURATION_SEC} s), hasta {MAX_CREATIVE_MB} MB. Si
+          tu video es más largo, eliges qué parte se ve. Horizontal, vertical o cuadrado: nosotros lo preparamos para el kiosco.
         </p>
 
         <div className="mt-4">
-          {preview ? (
+          {toTrim && !value ? (
+            <div>
+              <TrimPicker
+                src={toTrim.src}
+                durationMs={toTrim.durationMs}
+                windowMs={MAX_DURATION_SEC * 1000}
+                startMs={trimStart}
+                onChange={setTrimStart}
+              />
+              {!busy ? (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Button type="button" onClick={() => void upload(toTrim.file, null, trimStart)}>
+                    Usar este tramo
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => inputRef.current?.click()}>
+                    Elegir otro archivo
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : preview ? (
             <KioskPreview src={preview.src} poster={preview.poster} />
           ) : (
             <button
@@ -379,7 +433,7 @@ function CreativeStep({
               }}
               className="flex aspect-[16/10] w-full flex-col items-center justify-center gap-2 rounded-[var(--cd-radius-md)] border-2 border-dashed border-[var(--cd-line)] bg-[var(--cd-surface)] px-6 text-center hover:border-[var(--cd-subtle)]"
             >
-              <span className="text-[length:var(--cd-body)] font-medium">Arrastra tu video aquí</span>
+              <span className="text-[length:var(--cd-body)] font-medium">Arrastra tu video o imagen aquí</span>
               <span className="text-[length:var(--cd-small)] text-[var(--cd-muted)]">o haz clic para elegirlo</span>
             </button>
           )}
@@ -388,7 +442,7 @@ function CreativeStep({
         <input
           ref={inputRef}
           type="file"
-          accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi"
+          accept="video/*,image/jpeg,image/png,image/webp,.mp4,.mov,.m4v,.webm,.mkv,.avi,.jpg,.jpeg,.png,.webp"
           className="sr-only"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -494,12 +548,14 @@ function ScreensStep({
   onChange,
   spotPriceCents,
   house,
+  adSec,
 }: {
   screens: WizardScreen[];
   selected: Record<string, number>;
   onChange: (next: Record<string, number>) => void;
   spotPriceCents: number;
   house: boolean;
+  adSec: number;
 }) {
   if (screens.length === 0) {
     return (
@@ -524,11 +580,11 @@ function ScreensStep({
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Elige pantallas</h2>
-          <p className="mt-1 text-[length:var(--cd-small)] text-[var(--cd-muted)]">
+          <h2 className="text-[length:var(--cd-headline)] font-medium tracking-[-0.02em]">Elige pantallas y frecuencia</h2>
+          <p className="mt-1 max-w-xl text-[length:var(--cd-small)] text-[var(--cd-muted)]">
             {house
               ? "Tus pantallas. Tus anuncios propios no tienen costo."
-              : `Cada spot es un lugar en la rotación: ${formatMxn(spotPriceCents, { decimals: false })} al mes por pantalla. Más spots, más veces al aire.`}
+              : `Cada pantalla pasa los anuncios por turnos. Un spot es un turno tuyo: más spots, tu anuncio sale más seguido. ${formatMxn(spotPriceCents, { decimals: false })} al mes por spot en cada pantalla.`}
           </p>
         </div>
         <button
@@ -563,17 +619,24 @@ function ScreensStep({
                   </span>
                 </span>
               </label>
-              {on && !house ? (
-                <div className="ml-8 flex items-center gap-1 sm:ml-0" aria-label={`Spots en ${s.name}`}>
-                  <StepperButton label="Menos" onClick={() => setSpots(s.id, selected[s.id] - 1)} disabled={selected[s.id] <= 1}>
-                    −
-                  </StepperButton>
-                  <span className="w-16 text-center text-[length:var(--cd-small)] tabular-nums">
-                    {selected[s.id]} {selected[s.id] === 1 ? "spot" : "spots"}
+              {on ? (
+                <div className="ml-8 flex flex-col items-start gap-1 sm:ml-0 sm:items-end">
+                  {!house ? (
+                    <div className="flex items-center gap-1" role="group" aria-label={`Frecuencia en ${s.name}`}>
+                      <StepperButton label="Menos" onClick={() => setSpots(s.id, selected[s.id] - 1)} disabled={selected[s.id] <= 1}>
+                        −
+                      </StepperButton>
+                      <span className="w-16 text-center text-[length:var(--cd-small)] tabular-nums">
+                        {selected[s.id]} {selected[s.id] === 1 ? "spot" : "spots"}
+                      </span>
+                      <StepperButton label="Más" onClick={() => setSpots(s.id, selected[s.id] + 1)} disabled={selected[s.id] >= 10}>
+                        +
+                      </StepperButton>
+                    </div>
+                  ) : null}
+                  <span className="text-[length:var(--cd-label)] text-[var(--cd-muted)]">
+                    {frequencyLabel(minutesBetweenPlays({ spots: selected[s.id], otherSpots: s.bookedSpots, dailyPayers: s.dailyPayers }, adSec))}
                   </span>
-                  <StepperButton label="Más" onClick={() => setSpots(s.id, selected[s.id] + 1)} disabled={selected[s.id] >= 10}>
-                    +
-                  </StepperButton>
                 </div>
               ) : null}
             </li>
@@ -582,6 +645,13 @@ function ScreensStep({
       </ul>
     </div>
   );
+}
+
+/** "sale ≈ cada 4 min" — how often your ad comes back on this screen. */
+function frequencyLabel(minutes: number): string {
+  if (!Number.isFinite(minutes)) return "";
+  if (minutes < 1) return `Sale ≈ cada ${Math.max(5, Math.round((minutes * 60) / 5) * 5)} s`;
+  return `Sale ≈ cada ${Math.round(minutes)} min`;
 }
 
 function StepperButton({

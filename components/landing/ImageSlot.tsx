@@ -6,13 +6,16 @@ import { IconImage } from "./icons";
 
 const EXTENSIONS = ["webp", "jpg", "jpeg", "png", "avif"];
 
-function findFile(name: string): string | null {
-  for (const ext of EXTENSIONS) {
+/** Public path of `public/landing/<name>.<ext>` for the first extension found. */
+export function findLandingFile(name: string, extensions: readonly string[] = EXTENSIONS): string | null {
+  for (const ext of extensions) {
     const rel = `/landing/${name}.${ext}`;
     if (fs.existsSync(path.join(process.cwd(), "public", rel))) return rel;
   }
   return null;
 }
+
+const findFile = (name: string) => findLandingFile(name);
 
 /**
  * Shows public/landing/<name>.* when it exists; otherwise a placeholder that

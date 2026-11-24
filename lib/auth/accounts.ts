@@ -9,7 +9,7 @@ import { memberships, organizations, users } from "@/lib/db/schema";
 import { newId } from "@/lib/ids";
 import { hashPassword, verifyAgainstDummy, verifyPassword } from "./password";
 import type { OrgKind, Viewer, ViewerOrg } from "./roles";
-import type { SessionPayload } from "./session-token";
+import { SESSION_MAX_AGE_SEC, type SessionPayload } from "./session-token";
 
 export class AccountError extends Error {
   constructor(public code: "EMAIL_TAKEN") {
@@ -81,7 +81,7 @@ async function membershipsFor(userId: string): Promise<MembershipWithOrg[]> {
   return rows.map((r) => ({ role: r.role, org: toViewerOrg(r.org) }));
 }
 
-function envAdmin() {
+export function envAdmin() {
   return {
     email: normalizeEmail(process.env.PORTAL_ADMIN_EMAIL || "admin@codidooh.mx"),
     password: process.env.PORTAL_ADMIN_PASSWORD || "codidooh",
@@ -144,6 +144,11 @@ export async function loadViewer(payload: SessionPayload): Promise<Viewer | null
   const db = await getDb();
   const [user] = await db.select().from(users).where(eq(users.id, payload.uid));
   if (!user) return null;
+  // A password reset signs out every session issued before it.
+  if (user.passwordChangedAt) {
+    const issuedAtMs = (payload.exp - SESSION_MAX_AGE_SEC) * 1000;
+    if (issuedAtMs < user.passwordChangedAt.getTime() - 1000) return null;
+  }
 
   const orgs = await membershipsFor(user.id);
   let org: ViewerOrg | null = null;

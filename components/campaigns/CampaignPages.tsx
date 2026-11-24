@@ -13,7 +13,7 @@ import { campaignAnalytics } from "@/lib/data/analytics";
 import { campaignState, getCampaign } from "@/lib/data/campaigns";
 import { NotFoundError } from "@/lib/data/context";
 import { listCreatives } from "@/lib/data/creatives";
-import { listMarketplaceScreens, listOwnScreens } from "@/lib/data/screens";
+import { bookedSpotsByScreen, listMarketplaceScreens, listOwnScreens } from "@/lib/data/screens";
 import { isSandboxOrgId } from "@/lib/sandbox-id";
 import { billedCents, formatMxn } from "@/lib/pricing";
 import { getSettings } from "@/lib/settings";
@@ -33,6 +33,7 @@ export async function NewCampaignView({ mode }: { mode: Mode }) {
     listCreatives(ctx),
     getSettings(),
   ]);
+  const booked = await bookedSpotsByScreen(screens.map((s) => s.id));
   return (
     <main>
       <PageHeader
@@ -58,6 +59,8 @@ export async function NewCampaignView({ mode }: { mode: Mode }) {
           hostName: s.hostName,
           isDemo: s.isDemo,
           spotPriceCents: s.spotPriceCents,
+          dailyPayers: s.dailyPayers,
+          bookedSpots: booked.get(s.id) ?? 0,
         }))}
         library={creatives
           .filter((c) => c.status === "active")

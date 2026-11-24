@@ -6,7 +6,7 @@
  * platform admin can "operate as" them from /admin.
  */
 import { randomBytes } from "node:crypto";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   campaignScreens,
@@ -29,9 +29,9 @@ export const DEMO = {
   hostEmail: "host@demo.codidooh.mx",
   site: "sit_demoplaza01",
   screens: [
-    { id: "scr_demo_salida_a", name: "Caseta de salida A" },
-    { id: "scr_demo_salida_b", name: "Caseta de salida B" },
-    { id: "scr_demo_cajero_n2", name: "Cajero automático · Nivel 2" },
+    { id: "scr_demo_salida_a", name: "Caseta de salida A", dailyPayers: 900 },
+    { id: "scr_demo_salida_b", name: "Caseta de salida B", dailyPayers: 700 },
+    { id: "scr_demo_cajero_n2", name: "Cajero automático · Nivel 2", dailyPayers: 450 },
   ],
   brandOrg: "org_demosilvertag",
   brandUser: "usr_demosilvertag",
@@ -106,10 +106,18 @@ export async function seedDemo(now = new Date()) {
         tokenVersion: 1,
         tokenRotatedAt: now,
         acceptsAds: true,
+        dailyPayers: s.dailyPayers,
         isDemo: true,
       })),
     )
     .onConflictDoNothing();
+  // Older demo installs predate the people-per-day estimate.
+  for (const s of DEMO.screens) {
+    await db
+      .update(screens)
+      .set({ dailyPayers: s.dailyPayers })
+      .where(and(eq(screens.id, s.id), isNull(screens.dailyPayers)));
+  }
 
   // Placeholder creative from public/ads (1920×1080, 6 s, H.264) until the
   // real Silvertag spot is uploaded through the platform.
