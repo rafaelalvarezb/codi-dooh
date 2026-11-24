@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import { HeroScroll } from "@/components/landing/HeroScroll";
 import { ImageSlot } from "@/components/landing/ImageSlot";
 import { Nav } from "@/components/landing/Nav";
+import { HowItWorksScroll } from "@/components/landing/HowItWorksScroll";
 import { RevealObserver } from "@/components/landing/RevealObserver";
 import {
   Advertisers,
@@ -38,16 +39,20 @@ export default async function LandingPage() {
           }
         />
         <TickerBand />
-        <Benefits />
+        {/* For the driver */}
         <HowItWorks />
+        {/* For parking lots */}
+        <Benefits />
         <ScreenIncome />
-        <Advertisers />
         <Hardware />
+        {/* For advertisers */}
+        <Advertisers />
         <Faq />
         <DemoCta />
       </main>
       <Footer />
       <RevealObserver />
+      <HowItWorksScroll />
     </>
   );
 }

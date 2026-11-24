@@ -36,6 +36,8 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
   isPlatformAdmin: boolean("is_platform_admin").notNull().default(false),
+  /** Sessions issued before this are rejected (set when the password is reset). */
+  passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
   createdAt: createdAt(),
 });
 
@@ -253,4 +255,19 @@ export const leads = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("leads_created_idx").on(t.createdAt)],
+);
+
+/** One-time "recuperar contraseña" links. Only the SHA-256 of the token is stored. */
+export const passwordResets = pgTable(
+  "password_resets",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("password_resets_user_idx").on(t.userId)],
 );

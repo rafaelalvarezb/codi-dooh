@@ -211,21 +211,56 @@ Cuando veas la IP y ya **no** salga `HTTP -1` cada segundo, Parte B lista → Pa
 
 ---
 
-## Parte C — Probar el “clic” sin chapa
+## Parte C — Probar el “clic” sin chapa (en tu Mac, misma WiFi)
 
-1. En el Mac, abre Terminal y pega:
+**Importante:** el `curl` a `codi-dooh.vercel.app` puede responder `ok:true` pero el ESP32 **no oye el clic**, porque Vercel tiene varios servidores y la cola del relé vive en memoria de uno solo.  
+Para la demo en mesa usamos el proyecto **en tu Mac** (misma red que el ESP32).
+
+### C1. Arranca el servidor en el Mac
+1. Abre Terminal.  
+2. Ve a la carpeta del proyecto (ajusta si tu ruta es otra):
 
 ```bash
-curl -X POST https://codi-dooh.vercel.app/api/relay/pulse \
+cd ~/Projects/codi-dooh
+git pull
+npm install
+npm run dev:lan
+```
+
+3. Déjalo corriendo. Debe decir algo como `Local: http://localhost:3000` (escucha en toda la red local).
+
+### C2. Averigua la IP de tu Mac (en otra pestaña de Terminal)
+
+```bash
+ipconfig getifaddr en0
+```
+
+Ejemplo de respuesta: `192.168.100.5`  
+(Si sale vacío, prueba `en1`.)
+
+### C3. Cambia solo esta línea en el sketch y vuelve a Upload
+En Arduino, deja tu WiFi igual, pero cambia `POLL_URL` a **http** (no https) con la IP de tu Mac:
+
+```cpp
+const char* POLL_URL = "http://192.168.100.5:3000/api/relay/events";
+```
+
+(Usa **tu** IP, no la del ejemplo.)  
+Upload → pulsa **EN** → Serial debe mostrar `IP ...` y luego líneas `poll ok pending=0`.
+
+### C4. Dispara el pulse (misma IP del Mac)
+
+```bash
+curl -X POST http://192.168.100.5:3000/api/relay/pulse \
   -H 'Content-Type: application/json' \
   -d '{"durationMs":3000,"reason":"test-mesa"}'
 ```
 
-2. En ~1–2 segundos el relé debe hacer **clic** ~3 segundos y otro clic al soltar.
+En 1–3 s:
+- Serial: `poll ok pending=1` y `Pulse 3000ms reason=test-mesa`
+- Relé: **clic**
 
-- Si **no** hace clic: en `bridge.ino` cambia  
-  `RELAY_ON` a `HIGH` y `RELAY_OFF` a `LOW`, vuelve a Upload, repite el curl.
-- Si hace clic: sigue a la Parte D.
+Si no hay clic pero sí sale `Pulse...`: en el sketch cambia `RELAY_ON` a `HIGH` y `RELAY_OFF` a `LOW`, Upload otra vez.
 
 ---
 
@@ -233,16 +268,23 @@ curl -X POST https://codi-dooh.vercel.app/api/relay/pulse \
 
 **Regla de oro:** el eliminador 12V **nunca** se conecta a pines del ESP32. Solo a la chapa a través del relé.
 
+### Importante: el “tubito” del eliminador
+El eliminador termina en un **enchufe redondo (jack)**. Ese tubito **no** entra en el relé (el relé solo tiene tornillos).  
+Para conectar 12V al relé necesitas **los dos cables de adentro** del eliminador (+ y −), no el tubito completo:
+
+- Opción fácil: un **adaptador jack DC hembra a bornes/tornillos** (Mercado Libre: “jack 5.5 hembra a bornes”).
+- Opción casera: cortar la punta del cable del eliminador y pelar los 2 hilos (solo con el eliminador **desenchufado**).
+
 ### D1. Apaga todo
 1. Desconecta el USB del ESP32.
-2. El eliminador 12V **desenchufado** de la pared.
+2. El eliminador 12V **desenchufado de la pared** (no basta con “apagado”: sácalo del contacto).
 
 ### D2. Tornillos del canal 1 del relé
 En el bloque de tornillos del **canal 1**:
 
 | Tornillo relé | Va a… |
 |---------------|--------|
-| **COM** | Cable **positivo (+)** del eliminador 12V (suele ser el del centro del plug o el marcado +) |
+| **COM** | Cable **positivo (+)** del eliminador 12V (suele ser el del centro del jack o el marcado +) |
 | **NO** | Un cable de la **chapa** (da igual cuál de los 2 por ahora si no están marcados; si hay rojo/negro, usa el rojo aquí) |
 | (el otro cable de la chapa) | Cable **negativo (− / GND)** del eliminador 12V |
 
@@ -264,15 +306,22 @@ Cuando el relé “cierra”, la chapa recibe 12V y se mueve.
 
 ---
 
-## Parte E — Demo completa con CoDi
+## Parte E — Demo completa con CoDi (misma red LAN)
 
-1. ESP32 con WiFi (Serial muestra IP).
-2. Relé + chapa cableados.
-3. En el celular o Mac abre:  
-   https://codi-dooh.vercel.app/?profile=bathroom  
+Mientras el ESP32 hace poll a tu Mac (`POLL_URL` con la IP local), el kiosco **también** debe abrirse en ese Mac (no en Vercel). Si pagas en Vercel, el pulse no llega al ESP32 de mesa.
+
+1. ESP32 con WiFi (Serial: `IP ...`, `HTTP 200`, `poll ok pending=0`).
+2. Relé + chapa cableados; `npm run dev:lan` (o `npx next dev --hostname 0.0.0.0`) corriendo.
+3. En el Mac o celular (misma WiFi) abre:  
+   `http://<IP_DEL_MAC>:3000/?profile=bathroom`  
+   (ejemplo: `http://192.168.100.45:3000/?profile=bathroom`)  
+   Ahí debe salir el QR solo (perfil baño = cobro fijo).
 4. Escanea el QR con la **app de tu banco** (no la cámara normal).
 5. Confirma $0.01.
-6. Al “Pago recibido”, la chapa debe abrir ~3 s.
+6. Al “Pago recibido”, Serial debe mostrar `Pulse...` y la chapa abre ~3 s.
+
+**Nota:** `localhost:3000` sin `?profile=bathroom` abre estacionamiento (espera boleto → sin QR).  
+Para producción en Vercel hace falta cola compartida (Upstash Redis) o `RELAY_BRIDGE_URL`.
 
 ---
 

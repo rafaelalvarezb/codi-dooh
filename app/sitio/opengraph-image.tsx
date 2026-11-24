@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "cobten · Pagan con su banco. Salen en segundos.";
+export const alt = "cobten · Pagas con tu banco. Sales en segundos.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -29,12 +29,12 @@ export default function OpengraphImage() {
           <span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -3 }}>cobten</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 84, fontWeight: 700, letterSpacing: -4, lineHeight: 1 }}>Pagan con su banco.</span>
+          <span style={{ fontSize: 84, fontWeight: 700, letterSpacing: -4, lineHeight: 1 }}>Pagas con tu banco.</span>
           <span style={{ fontSize: 84, fontWeight: 700, letterSpacing: -4, lineHeight: 1.05, color: "rgba(255,255,255,0.45)" }}>
-            Salen en segundos.
+            Sales en segundos.
           </span>
           <span style={{ marginTop: 28, fontSize: 30, color: "rgba(255,255,255,0.6)" }}>
-            Cobro CoDi para estacionamientos
+            Paga tu estacionamiento con CoDi
           </span>
         </div>
       </div>

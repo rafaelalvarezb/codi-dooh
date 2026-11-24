@@ -67,3 +67,14 @@ Donde veas **[máquina]**, pega ese texto.
 
 ### ciudad-noche (21:9)
 > Ultra-wide night panorama of Mexico City seen from the rooftop parking level of a shopping mall, Paseo de la Reforma skyline lights in soft bokeh, deep blue-black sky, a faint green rim light on the parapet in the foreground, minimal and calm, very dark overall. [estilo común]
+
+## Video "Ver experiencia para anunciantes"
+
+En la sección **Para anunciantes**, el botón **Ver experiencia para anunciantes** abre una ventana con el video explicativo. Mientras no exista, la ventana dice "Muy pronto" y muestra la explicación de "Pagos durante tu anuncio".
+
+Para ponerlo:
+
+1. Exporta el video en **MP4 (H.264)**, horizontal 16:9, idealmente de menos de 50 MB.
+2. Llámalo exactamente `experiencia-anunciantes.mp4`.
+3. Opcional: una imagen de portada `experiencia-anunciantes.jpg`, que se ve antes de darle play.
+4. Súbelos a `public/landing` en GitHub (**Add file → Upload files → Commit changes**). En 1 o 2 minutos aparecen en la página.
