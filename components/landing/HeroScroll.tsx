@@ -91,27 +91,27 @@ export function HeroScroll({ qrSvg, background }: { qrSvg: string; background?: 
         <div className="cb-hero-copy">
           <p className="cb-eyebrow rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-1.5 text-white/80 backdrop-blur">
             <span className="size-1.5 rounded-full bg-[var(--cb-go-bright)]" />
-            Cobro CoDi para estacionamientos
+            Paga tu estacionamiento con CoDi
           </p>
           <h1 id="hero-title" className="cb-display mx-auto mt-6 max-w-[14ch] text-[clamp(44px,7.4vw,100px)]">
-            Pagan con su banco. <span className="text-white/45">Salen en segundos.</span>
+            Pagas con tu banco. <span className="text-white/45">Sales en segundos.</span>
           </h1>
           <p className="cb-lead mx-auto mt-6 max-w-[38rem] text-white/65">
-            Una pantalla con QR CoDi en la máquina de cobro de tu estacionamiento. Quien no trae suficiente efectivo
-            paga ahí mismo, con la app de su banco y sin comisiones.
+            ¿No traes efectivo? En la máquina de cobro escanea el QR CoDi con la app de tu banco y listo. Sin
+            comisiones.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
-              href="#demo"
+              href="#como-funciona"
               className="inline-flex h-12 items-center rounded-full bg-white px-6 text-[15px] font-medium text-[var(--cb-ink)] transition hover:bg-white/90"
             >
-              Agenda una demo
+              Ver cómo funciona
             </a>
             <a
-              href="#como-funciona"
+              href="#estacionamientos"
               className="inline-flex h-12 items-center rounded-full border border-white/15 px-6 text-[15px] font-medium text-white transition hover:bg-white/10"
             >
-              Cómo funciona
+              Para negocios
             </a>
           </div>
           <div className="cb-scroll-hint mt-10 hidden flex-col items-center gap-2 text-[12px] text-white/40 sm:flex">
@@ -140,7 +140,7 @@ export function HeroScroll({ qrSvg, background }: { qrSvg: string; background?: 
             <span className="cb-chip-icon">
               <IconBank className="size-4" />
             </span>
-            Con la app de su banco, sin comisiones
+            Con la app de tu banco, sin comisiones
           </div>
           <div className="cb-chip cb-chip-ticket" style={{ left: "-6cqw", bottom: "-2.5cqw" }}>
             <span className="cb-chip-icon cb-ticket-icon">
@@ -157,7 +157,7 @@ export function HeroScroll({ qrSvg, background }: { qrSvg: string; background?: 
           </div>
         </div>
 
-        <ol className="cb-steps" aria-label="Cómo paga tu cliente">
+        <ol className="cb-steps" aria-label="Cómo pagas">
           <li className="cb-step" data-step="scan">
             <span className="cb-step-n">01</span>Escanea
           </li>
@@ -165,7 +165,7 @@ export function HeroScroll({ qrSvg, background }: { qrSvg: string; background?: 
             <span className="cb-step-n">02</span>Confirma
           </li>
           <li className="cb-step" data-step="done">
-            <span className="cb-step-n">03</span>Sale
+            <span className="cb-step-n">03</span>Sal
           </li>
         </ol>
       </div>
