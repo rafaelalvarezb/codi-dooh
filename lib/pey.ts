@@ -121,6 +121,7 @@ export async function createCodiQr(
 ): Promise<CreatePeyQrResult> {
   return peyFetch<CreatePeyQrResult>("/codi/qr", {
     method: "POST",
+    timeoutMs: 12_000,
     body: JSON.stringify({
       amount: input.amount,
       concept: input.concept,
