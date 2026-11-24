@@ -1,0 +1,1 @@
+ALTER TABLE "creatives" DROP COLUMN "fit_mode";

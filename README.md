@@ -1,40 +1,102 @@
-# CODI · DOOH
+# cobten
 
-Kiosco **CoDi + DOOH**: microcobros con transferencia QR (Pey) a **0% comisión**,
-pantalla de anuncios a full-bleed, y portal lean de operación.
+Kiosco **CoDi + DOOH** y plataforma de anuncios de autoservicio. Un solo proyecto
+sirve dos dominios (ver `proxy.ts` y `lib/site.ts`):
 
-Live: https://codi-dooh.vercel.app · Portal: https://codi-dooh.vercel.app/portal
+- **cobten.com**: página pública (código en `app/sitio`, `components/landing`).
+  Imágenes: [`docs/landing-imagenes.md`](docs/landing-imagenes.md).
+- **app.cobten.com**: la app (entrar, anunciantes, host, admin y kioscos).
+- `codi-dooh.vercel.app`, los previews y `localhost` siguen igual; la página
+  pública se ve en `/sitio`.
 
-## Qué incluye
+- **Kiosco**: microcobros con transferencia QR (Pey) a **0% comisión** y pantalla de
+  anuncios en la columna izquierda.
+- **Anunciantes** (`/anunciantes`): suben un video, ven cómo se verá en el kiosco,
+  eligen pantallas y publican. Ven reproducciones, horarios y **pagos hechos con
+  CoDi mientras corría su anuncio**.
+- **Hosts** (`/host`): dan de alta su negocio, CLABE, sitios y pantallas, obtienen el
+  link del kiosco con QR y ven lo que ganan por anuncios (70% por defecto).
+- **Admin** (`/admin`): totales, moderación de videos, precio y comisión,
+  organizaciones y datos de demo.
 
-- Kiosco SPEC (`design/`): panel CoDi 420px + DOOH `object-cover`.
-- Estados: esperando → confirmando → recibido (+ vencido / rechazado / no-disponible).
-- Perfiles: `/?profile=bathroom|parking|laundry` · hints con `&demo=1`.
-- Portal `/portal`: login, máquinas, transacciones, resumen día/semana.
-- Firmware scaffold: `firmware/esp32-relay` (poll `/api/relay/events`).
-- Ads roadmap: `docs/ads-roadmap.md` (manual → locales → DV360).
+Live: https://codi-dooh.vercel.app
 
 ## Arranque local
 
+No necesitas configurar nada para empezar:
+
 ```bash
-cp .env.example .env.local   # pon tu PEY_API_KEY
 npm install
+npm run db:seed   # opcional: datos de demo (con el servidor apagado)
 npm run dev
 ```
 
-- Kiosco: http://localhost:3000  
-- Portal: http://localhost:3000/portal (admin@codidooh.mx / codidooh)
+Sin `DATABASE_URL` la app usa un Postgres dentro del mismo proceso (PGlite) guardado
+en `.data/pglite`, y sin Blob los videos se guardan en `.data/uploads`. Para cobrar
+de verdad copia `.env.example` a `.env.local` y pon tu `PEY_API_KEY`.
 
-## Design system
+- Kiosco: http://localhost:3000 (`/?profile=bathroom|parking|laundry`)
+- Entrar: http://localhost:3000/entrar (admin: `admin@codidooh.mx` / `codidooh` en local)
+- Crear cuenta: http://localhost:3000/registro
 
-Ver [`design/README.md`](design/README.md), [`design/SPEC.md`](design/SPEC.md) y
-la regla Cursor [`.cursor/rules/codidooh.mdc`](.cursor/rules/codidooh.mdc).
-Tokens: `design/tokens.css` (importados en `app/globals.css`).
+## Rutas principales
 
-## Hardware (cuando llegue el kit)
+| Ruta | Quién | Qué |
+| --- | --- | --- |
+| `/registro`, `/entrar` | todos | Cuenta de anunciante o host |
+| `/anunciantes`, `/anunciantes/campanas/nueva`, `/anunciantes/campanas/[id]` | anunciante | Campañas, creador y resultados |
+| `/host`, `/host/ingresos`, `/host/pantallas`, `/host/bienvenida`, `/host/campanas` | host | Resumen, dinero, pantallas, alta y anuncios propios |
+| `/admin`, `/admin/creativos`, `/admin/campanas`, `/admin/organizaciones`, `/admin/contactos`, `/admin/ajustes` | admin | Operación de la plataforma y solicitudes de demo |
+| `/sitio` (en cobten.com: `/`) | público | Página de inicio y formulario "Agenda una demo" (`POST /api/leads`) |
+| `/?profile=parking&screen=<id>&token=<t>&session=1` | kiosco | Pantalla vinculada: anuncios en vivo y proof of play |
+| `GET /api/dooh/playlist?screen=<id>` | kiosco | Lista de anuncios (rotación ponderada, caché corta) |
+| `POST /api/dooh/plays` | kiosco | Reproducciones, firmadas con el token de la pantalla |
 
-ESP32 + relé 5V (+ chapa 12V opcional). Guía: [`firmware/esp32-relay/README.md`](firmware/esp32-relay/README.md).
+Sin `screen=` el kiosco funciona exactamente como antes, con los videos de `public/ads`.
 
-## Variables
+## Cómo está hecho
 
-Ver `.env.example` (`PEY_*`, `PORTAL_*`, `RELAY_BRIDGE_URL`).
+- Next.js 16 (App Router, Cache Components), Tailwind 4 con los tokens `--cd-*`.
+- Postgres con Drizzle ORM: Neon en Vercel, PGlite en local y en pruebas. Esquema en
+  `lib/db/schema.ts`, migraciones versionadas en `drizzle/` (se aplican solas en el
+  build de Vercel).
+- Sesión con contraseña (scrypt) y cookie firmada. Toda consulta de datos recibe la
+  organización desde la sesión (`lib/auth/dal.ts` → `OrgCtx` → `lib/data/*`).
+- Videos en Vercel Blob con subida directa desde el navegador; el servidor vuelve a
+  revisar cada MP4 (`lib/video/`).
+- Lógica pura con pruebas: CLABE (`lib/clabe.ts`), rotación (`lib/rotation.ts`),
+  atención verificada (`lib/attention.ts`), dinero (`lib/revenue.ts`, `lib/pricing.ts`),
+  tokens de pantalla (`lib/screen-token.ts`), firma de webhooks.
+
+## Scripts
+
+| Comando | Qué hace |
+| --- | --- |
+| `npm run dev` | Servidor local |
+| `npm run build` | Migraciones (si hay `DATABASE_URL`) y build |
+| `npm run test` | Pruebas (Vitest + PGlite) |
+| `npm run lint` / `npm run typecheck` | Revisión de código y tipos |
+| `npm run db:seed` | Datos de demo (todo marcado como demo; se puede repetir) |
+| `npm run db:generate` / `npm run db:migrate` | Crear o aplicar migraciones |
+
+## Producción (Vercel)
+
+1. **Storage → Neon**: crea `DATABASE_URL` (Production, Preview y Development).
+2. **Storage → Blob**: crea el store para los videos.
+3. **Environment Variables**: `SESSION_SECRET` (cadena larga aleatoria),
+   `PORTAL_ADMIN_EMAIL` y `PORTAL_ADMIN_PASSWORD` (fuerte), `PEY_API_KEY` y, si Pey
+   te da una, `PEY_WEBHOOK_SECRET`.
+4. **Domains**: `cobten.com`, `www.cobten.com` (redirige a cobten.com) y `app.cobten.com`.
+   Opcional: `NEXT_PUBLIC_APP_URL` si la app vive en otro dominio (por defecto `https://app.cobten.com`).
+5. Despliega. Para la demo: `/admin` → **Cargar datos de demo**.
+
+Todas las variables están explicadas en `.env.example`.
+
+## Documentos
+
+- Guion de la demo: [`docs/demo-script.md`](docs/demo-script.md)
+- Imágenes de la página pública: [`docs/landing-imagenes.md`](docs/landing-imagenes.md)
+- Roadmap y lo que quedó fuera: [`docs/ads-roadmap.md`](docs/ads-roadmap.md)
+- Design system: [`design/README.md`](design/README.md), [`design/SPEC.md`](design/SPEC.md),
+  [`.cursor/rules/codidooh.mdc`](.cursor/rules/codidooh.mdc)
+- Hardware (ESP32 + relé): [`firmware/esp32-relay/README.md`](firmware/esp32-relay/README.md)

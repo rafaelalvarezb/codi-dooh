@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import QRCode from "qrcode";
+import { z } from "zod";
 import { touchMachine } from "@/lib/machines";
 import { markPending } from "@/lib/payment-store";
 import { createCodiQr, PeyApiError } from "@/lib/pey";
@@ -31,6 +32,15 @@ async function createMockQr() {
   };
 }
 
+const BodySchema = z.object({
+  useCaseId: z.enum(["parking", "laundry", "restroom"]).optional(),
+  machineId: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9_-]{1,64}$/i)
+    .optional(),
+});
+
 function shouldUseMock(): boolean {
   const apiKey = process.env.PEY_API_KEY;
   return !apiKey || apiKey === "sk_live_your_key_here";
@@ -38,10 +48,16 @@ function shouldUseMock(): boolean {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => ({}))) as {
-      useCaseId?: UseCaseId;
-      machineId?: string;
-    };
+    const parsed = BodySchema.safeParse(
+      await request.json().catch(() => ({})),
+    );
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: { message: "Solicitud inválida", type: "INVALID_REQUEST" } },
+        { status: 400 },
+      );
+    }
+    const body: { useCaseId?: UseCaseId; machineId?: string } = parsed.data;
 
     const useCase = getUseCase(body.useCaseId ?? "parking");
     const concept = buildConcept(useCase);
@@ -65,12 +81,17 @@ export async function POST(request: Request) {
           },
         });
 
-    markPending(peyQr.id, {
-      machineId,
-      concept,
-      amount: HACKATHON_AMOUNT_MXN,
-    });
-    touchMachine(machineId, "online");
+    // The ledger must never block charging: log and keep going.
+    try {
+      await markPending(peyQr.id, {
+        machineId,
+        concept,
+        amount: HACKATHON_AMOUNT_MXN,
+      });
+      await touchMachine(machineId, "online");
+    } catch (ledgerError) {
+      console.error("[create-qr] ledger write failed", ledgerError);
+    }
 
     const payload: CreateQrResponse = {
       qrId: peyQr.id,

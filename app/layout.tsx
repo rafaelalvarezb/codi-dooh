@@ -13,10 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CODI · DOOH",
-  description:
-    "Kiosco CoDi + DOOH: cobros claros con transferencia QR y publicidad programática.",
-  applicationName: "CODI-DOOH",
+  title: "cobten",
+  description: "Cobros CoDi y publicidad en pantalla para estacionamientos.",
+  applicationName: "cobten",
   robots: { index: false, follow: false },
 };
 

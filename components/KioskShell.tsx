@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CodiPanel } from "@/components/CodiPanel";
 import { DoohPlayer } from "@/components/DoohPlayer";
@@ -13,6 +13,7 @@ import { resolveProfile, type KioskProfileId } from "@/lib/kiosk-profile";
  *   /?profile=laundry
  *   /?profile=parking&session=1
  *   /?profile=bathroom&demo=1  (shows profile switcher)
+ *   /?profile=parking&screen=<id>&token=<secret>  (linked screen, live ads)
  *
  * Layout SPEC: minmax(0,1fr) 420px — DOOH full-bleed left, CoDi panel right.
  */
@@ -23,15 +24,22 @@ export function KioskShell() {
     [searchParams],
   );
   const sessionFromSignal = searchParams.get("session") === "1";
+  // Linked screen (/?screen=<id>&token=<secret>): live playlist + proof of play.
+  const rawScreen = searchParams.get("screen");
+  const screenId = rawScreen && /^[a-z0-9_-]{1,64}$/i.test(rawScreen) ? rawScreen : null;
+  const token = searchParams.get("token");
   const showDemoHints = searchParams.get("demo") === "1";
 
-  const [sessionActive, setSessionActive] = useState(
-    profile.billingMode === "fixed" || sessionFromSignal,
-  );
+  const initialSession = profile.billingMode === "fixed" || sessionFromSignal;
+  const sessionKey = `${profile.id}|${profile.billingMode}|${sessionFromSignal}`;
+  const [sessionActive, setSessionActive] = useState(initialSession);
+  const [prevSessionKey, setPrevSessionKey] = useState(sessionKey);
 
-  useEffect(() => {
-    setSessionActive(profile.billingMode === "fixed" || sessionFromSignal);
-  }, [profile.id, profile.billingMode, sessionFromSignal]);
+  // Reset the session when the profile or ?session= changes (render-time sync).
+  if (prevSessionKey !== sessionKey) {
+    setPrevSessionKey(sessionKey);
+    setSessionActive(initialSession);
+  }
 
   return (
     <div
@@ -43,11 +51,13 @@ export function KioskShell() {
           <DoohPlayer
             billingMode={profile.billingMode}
             sessionActive={sessionActive}
+            screenId={screenId}
+            token={token}
           />
           <CodiPanel
             profile={profile}
             sessionActive={sessionActive}
-            machineId={profile.id}
+            machineId={screenId ?? profile.id}
             onEndSession={
               profile.billingMode === "dynamic"
                 ? () => setSessionActive(false)
