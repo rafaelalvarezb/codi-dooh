@@ -306,15 +306,22 @@ Cuando el relé “cierra”, la chapa recibe 12V y se mueve.
 
 ---
 
-## Parte E — Demo completa con CoDi
+## Parte E — Demo completa con CoDi (misma red LAN)
 
-1. ESP32 con WiFi (Serial muestra IP).
-2. Relé + chapa cableados.
-3. En el celular o Mac abre:  
-   https://codi-dooh.vercel.app/?profile=bathroom  
+Mientras el ESP32 hace poll a tu Mac (`POLL_URL` con la IP local), el kiosco **también** debe abrirse en ese Mac (no en Vercel). Si pagas en Vercel, el pulse no llega al ESP32 de mesa.
+
+1. ESP32 con WiFi (Serial: `IP ...`, `HTTP 200`, `poll ok pending=0`).
+2. Relé + chapa cableados; `npm run dev:lan` (o `npx next dev --hostname 0.0.0.0`) corriendo.
+3. En el Mac o celular (misma WiFi) abre:  
+   `http://<IP_DEL_MAC>:3000/?profile=bathroom`  
+   (ejemplo: `http://192.168.100.45:3000/?profile=bathroom`)  
+   Ahí debe salir el QR solo (perfil baño = cobro fijo).
 4. Escanea el QR con la **app de tu banco** (no la cámara normal).
 5. Confirma $0.01.
-6. Al “Pago recibido”, la chapa debe abrir ~3 s.
+6. Al “Pago recibido”, Serial debe mostrar `Pulse...` y la chapa abre ~3 s.
+
+**Nota:** `localhost:3000` sin `?profile=bathroom` abre estacionamiento (espera boleto → sin QR).  
+Para producción en Vercel hace falta cola compartida (Upstash Redis) o `RELAY_BRIDGE_URL`.
 
 ---
 
