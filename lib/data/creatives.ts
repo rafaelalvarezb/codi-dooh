@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { creatives } from "@/lib/db/schema";
 import { newId } from "@/lib/ids";
 import { moderateCreative } from "@/lib/moderation";
+import { isSandboxOrgId } from "@/lib/sandbox-id";
 import { checkCreative, type VideoMeta } from "@/lib/video/rules";
 import { NotFoundError, ValidationError, type OrgCtx } from "./context";
 
@@ -32,6 +33,7 @@ export async function createCreative(
       sizeBytes: input.meta.sizeBytes,
       status: decision.status,
       moderationNote: decision.note ?? null,
+      isDemo: isSandboxOrgId(ctx.orgId),
     })
     .returning();
   return row;

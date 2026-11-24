@@ -17,6 +17,10 @@ export default function LoginPage() {
           <Link href="/registro" className="font-medium text-[var(--cd-ink)] underline underline-offset-4">
             Crea una
           </Link>
+          {" · "}
+          <Link href="/probar" prefetch={false} className="font-medium text-[var(--cd-ink)] underline underline-offset-4">
+            Probar como anunciante
+          </Link>
         </>
       }
     >

@@ -14,6 +14,7 @@ import { campaignState, getCampaign } from "@/lib/data/campaigns";
 import { NotFoundError } from "@/lib/data/context";
 import { listCreatives } from "@/lib/data/creatives";
 import { bookedSpotsByScreen, listMarketplaceScreens, listOwnScreens } from "@/lib/data/screens";
+import { isSandboxOrgId } from "@/lib/sandbox-id";
 import { billedCents, formatMxn } from "@/lib/pricing";
 import { getSettings } from "@/lib/settings";
 import { storageMode } from "@/lib/storage";
@@ -50,7 +51,7 @@ export async function NewCampaignView({ mode }: { mode: Mode }) {
         uploadMode={storageMode()}
         spotPriceCents={settings.defaultSpotPriceCents}
         basePath={BASE[mode]}
-        screens={screens.map((s) => ({
+        screens={screens.filter((s) => !isSandboxOrgId(viewer.org.id) || s.isDemo).map((s) => ({
           id: s.id,
           name: s.name,
           siteName: s.siteName,

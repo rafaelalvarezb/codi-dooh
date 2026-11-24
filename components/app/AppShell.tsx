@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { isSandboxOrgId } from "@/lib/sandbox-id";
+import { MARKETING_URL } from "@/lib/site";
 import { CobtenLogo } from "@/components/brand/CobtenLogo";
 import type { ReactNode } from "react";
 import { requireViewer } from "@/lib/auth/dal";
@@ -31,6 +33,18 @@ export async function AppShell({ area, children }: { area: Area; children: React
   return (
     <div className="min-h-dvh bg-[var(--cd-surface)]">
       {viewer.actingAsAdmin && viewer.org ? <ActingAsBanner orgName={viewer.org.name} /> : null}
+      {isSandboxOrgId(viewer.org?.id) ? (
+        <div className="bg-[var(--cd-accent)] px-4 py-2.5 text-center text-[length:var(--cd-small)] text-white">
+          Estás en una <strong className="font-medium">cuenta de prueba</strong>: lo que publiques solo corre en pantallas demo.{" "}
+          <a href="/registro" className="font-medium underline underline-offset-2">
+            Crear mi cuenta real
+          </a>
+          {" · "}
+          <a href={`${MARKETING_URL}/#anunciantes`} className="font-medium underline underline-offset-2">
+            Ver la experiencia
+          </a>
+        </div>
+      ) : null}
       <header className="sticky top-0 z-30 border-b border-[var(--cd-line)] bg-[var(--cd-bg)]/95 backdrop-blur">
         {/* Phone: logo + account on top, sections in a scrollable row below. */}
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-4 px-4 sm:h-14 sm:flex-nowrap sm:px-6">

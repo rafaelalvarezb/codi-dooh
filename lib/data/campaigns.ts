@@ -1,4 +1,5 @@
 /** Campaigns, always scoped to the caller's org. */
+import { isSandboxOrgId } from "@/lib/sandbox-id";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { campaignScreens, campaigns, creatives, plays, screens } from "@/lib/db/schema";
@@ -36,6 +37,7 @@ export async function createCampaign(ctx: OrgCtx, input: CampaignInput) {
     throw new ValidationError("La campaña puede durar hasta un año.");
   }
   const unique = new Map(input.screens.map((s) => [s.screenId, s]));
+  const sandbox = isSandboxOrgId(ctx.orgId);
   if (unique.size === 0) throw new ValidationError("Elige al menos una pantalla.");
 
   const db = await getDb();
@@ -47,7 +49,7 @@ export async function createCampaign(ctx: OrgCtx, input: CampaignInput) {
   if (creative.status !== "active") throw new ValidationError("Este creativo está pausado o rechazado.");
 
   const screenRows = await db
-    .select({ id: screens.id, orgId: screens.orgId, acceptsAds: screens.acceptsAds })
+    .select({ id: screens.id, orgId: screens.orgId, acceptsAds: screens.acceptsAds, isDemo: screens.isDemo })
     .from(screens)
     .where(inArray(screens.id, [...unique.keys()]));
   if (screenRows.length !== unique.size) throw new ValidationError("Una de las pantallas no existe.");
@@ -58,6 +60,9 @@ export async function createCampaign(ctx: OrgCtx, input: CampaignInput) {
     }
     if (input.mode === "advertiser" && !s.acceptsAds) {
       throw new ValidationError("Una de las pantallas no acepta anuncios.");
+    }
+    if (sandbox && !s.isDemo) {
+      throw new ValidationError("En la cuenta de prueba solo puedes usar pantallas demo.");
     }
   }
 
@@ -76,6 +81,7 @@ export async function createCampaign(ctx: OrgCtx, input: CampaignInput) {
       billing,
       status: "active",
       spotPriceCents: billing === "house" ? 0 : defaultSpotPriceCents,
+      isDemo: sandbox,
     });
     await tx.insert(campaignScreens).values(
       [...unique.values()].map((s) => ({
