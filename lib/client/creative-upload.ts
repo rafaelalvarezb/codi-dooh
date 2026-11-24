@@ -1,11 +1,30 @@
 "use client";
 
-import { sourceExtension } from "@/lib/storage-paths";
-import { checkSource } from "@/lib/video/rules";
+import { isImageSource, sourceExtension } from "@/lib/storage-paths";
+import { checkSource, IMAGE_DURATION_SEC } from "@/lib/video/rules";
 
 export type UploadMode = "blob" | "local" | "none";
 
-export type SourceMeta = { durationMs: number; width: number; height: number };
+export type SourceMeta = { durationMs: number; width: number; height: number; image?: boolean };
+
+/** Picked file is a still image (shown 15 s) rather than a video. */
+export function isImageFile(file: File): boolean {
+  return file.type.startsWith("image/") || isImageSource(file.name);
+}
+
+async function readImageMeta(file: File): Promise<SourceMeta | null> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return { durationMs: IMAGE_DURATION_SEC * 1000, width: img.naturalWidth, height: img.naturalHeight, image: true };
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 /**
  * Reads duration and size with the browser's own player, for instant feedback.
@@ -13,6 +32,7 @@ export type SourceMeta = { durationMs: number; width: number; height: number };
  * some systems): it still uploads, and the server converts and re-checks it.
  */
 export async function readSourceMeta(file: File): Promise<SourceMeta | null> {
+  if (isImageFile(file)) return readImageMeta(file);
   const url = URL.createObjectURL(file);
   try {
     const video = document.createElement("video");
@@ -41,10 +61,17 @@ export async function readSourceMeta(file: File): Promise<SourceMeta | null> {
 
 /** Browser-side checks on the original (server repeats them). */
 export function precheck(file: File, meta: SourceMeta | null): string[] {
-  if (!file.type.startsWith("video/") && !/\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name)) {
-    return ["Ese archivo no es un video."];
+  const image = isImageFile(file);
+  if (!image && !file.type.startsWith("video/") && !/\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name)) {
+    return ["Sube un video (MP4, MOV…) o una imagen (JPG, PNG, WebP)."];
   }
-  return checkSource({ durationMs: meta?.durationMs ?? 10_000, width: meta?.width ?? 0, height: meta?.height ?? 0, sizeBytes: file.size });
+  return checkSource({
+    durationMs: meta?.durationMs ?? 10_000,
+    width: meta?.width ?? 0,
+    height: meta?.height ?? 0,
+    sizeBytes: file.size,
+    image,
+  });
 }
 
 function slug(): string {

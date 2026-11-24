@@ -4,6 +4,9 @@ import { describe, expect, it } from "vitest";
 import { buildSequence } from "@/lib/rotation";
 import {
   checkCreative,
+  checkSource,
+  clampTrimStart,
+  needsTrim,
   letterboxFor,
   isH264,
   matchDuration,
@@ -55,14 +58,26 @@ const u32 = (n: number) => {
 describe("creative rules", () => {
   const ok = { codec: "avc1.64001f", durationMs: 6000, width: 1920, height: 1080, sizeBytes: 5e6 };
 
-  it("accepts any H.264 length from 5 to 30 s (±0.5 s)", () => {
+  it("spots run 5–15 s (±0.5 s)", () => {
     expect(checkCreative(ok).ok).toBe(true);
     expect(matchDuration(6_040)).toBe(6);
-    expect(matchDuration(8_000)).toBe(8);
-    expect(matchDuration(30_060)).toBe(30);
+    expect(matchDuration(15_040)).toBe(15);
     expect(matchDuration(4_400)).toBeNull();
-    expect(matchDuration(31_000)).toBeNull();
-    expect(checkCreative({ ...ok, durationMs: 30_040, sizeBytes: 73e6, width: 1080, height: 1920 }).ok).toBe(true);
+    expect(matchDuration(16_000)).toBeNull();
+    expect(checkCreative({ ...ok, durationMs: 15_000, sizeBytes: 37e6, width: 1080, height: 1920 }).ok).toBe(true);
+  });
+
+  it("accepts longer originals and images; the 15 s cut stays inside the video", () => {
+    expect(checkSource({ durationMs: 30_040, width: 1920, height: 1080, sizeBytes: 58e6 })).toEqual([]);
+    expect(checkSource({ durationMs: 0, width: 1080, height: 1350, sizeBytes: 2e6, image: true })).toEqual([]);
+    expect(checkSource({ durationMs: 3_000, width: 1920, height: 1080, sizeBytes: 1e6 })[0]).toMatch(/al menos 5/);
+    expect(checkSource({ durationMs: 11 * 60_000, width: 1920, height: 1080, sizeBytes: 1e6 })[0]).toMatch(/máximo 10 minutos/);
+    expect(needsTrim(15_400)).toBe(false);
+    expect(needsTrim(15_600)).toBe(true);
+    expect(clampTrimStart(undefined, 30_000)).toBe(0);
+    expect(clampTrimStart(12_000, 30_000)).toBe(12_000);
+    expect(clampTrimStart(25_000, 30_000)).toBe(15_000);
+    expect(clampTrimStart(-5, 30_000)).toBe(0);
   });
 
   it("rejects other codecs, heavy files, wrong durations and low resolution", () => {

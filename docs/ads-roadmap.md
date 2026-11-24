@@ -13,7 +13,8 @@ Pitch comercial:
 ## Fase B: Ads Manager DOOH de autoservicio (hecha en `feat/ads-platform`)
 
 - **Anunciantes**: registro abierto, subida de casi cualquier video (MP4, MOV/HEVC, WebM, MKV;
-  5–30 s, ≤ 250 MB) que el servidor convierte con ffmpeg a H.264 ≤ 1280 px, vista previa exacta del kiosco,
+  ≤ 250 MB) o imagen (JPG, PNG, WebP) que el servidor convierte con ffmpeg a H.264 ≤ 1280 px;
+  spots de 5–15 s (videos más largos se recortan al tramo que elige la marca; imágenes = 15 s), vista previa exacta del kiosco,
   elección de pantallas y spots, publicación inmediata, analítica con
   "pagos durante tu anuncio" (atención verificada con CoDi).
 - **Hosts**: alta en 4 pasos (negocio → CLABE validada → sitio → pantalla), link

@@ -41,7 +41,7 @@ export default async function AdvertiserHome() {
           basePath="/anunciantes/campanas"
           newHref="/anunciantes/campanas/nueva"
           emptyTitle="Aún no tienes campañas"
-          emptyBody="Sube un video de 5 a 30 segundos y elige en qué pantallas quieres aparecer. En menos de un minuto ya está al aire."
+          emptyBody="Sube un video de hasta 15 segundos (o una imagen) y elige en qué pantallas quieres aparecer. En menos de un minuto ya está al aire."
         />
       </div>
     </main>
